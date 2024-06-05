@@ -28,7 +28,7 @@ class InOut:
         col = int(input("Enter column: "))
         
         #Error checking for invalid row or column & checking for occupied space
-        while row < 0 or row > 2 or col < 0 or col > 2 or self.board.grid[row][col] != 0:
+        while (row < 0 or row > 2 or col < 0 or col > 2) or (self.board.grid[row][col] != 0):
           if row < 0 or row > 2 or col < 0 or col > 2:
             print('Invalid row or column, try again')
             row = int(input("Enter row: "))
