@@ -1,7 +1,7 @@
 # Tic-Tac-Joe: A Generative Tic-Tac-Toe Model
 
 ## Authors
-This project was created by Benjamin Rodgers and Theodore Tasman
+This project was created by Theodore Tasman and Benjamin Rodgers
 
 ## Overview
 This project aims to create a generative model for playing tic-tac-toe using a neural network. The model learns to play tic-tac-toe by playing against another iteration of itself.
