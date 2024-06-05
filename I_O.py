@@ -27,17 +27,17 @@ class InOut:
         row = int(input("Enter row: "))
         col = int(input("Enter column: "))
         
-        #Error checking for invalid row or column
-        while row < 0 or row > 2 or col < 0 or col > 2:
-          print('Invalid row or column, try again')
-          row = int(input("Enter row: "))
-          col = int(input("Enter column: "))
-        
-        #Error checking for occupied space
-        while self.board.grid[row][col] != 0:
-          print('The position of ({row}, {col}) is already occupied, try a unused space.')
-          row = int(input("Enter row: "))
-          col = int(input("Enter column: "))
+        #Error checking for invalid row or column & checking for occupied space
+        while row < 0 or row > 2 or col < 0 or col > 2 or self.board.grid[row][col] != 0:
+          if row < 0 or row > 2 or col < 0 or col > 2:
+            print('Invalid row or column, try again')
+            row = int(input("Enter row: "))
+            col = int(input("Enter column: "))
+          elif self.board.grid[row][col] != 0:
+            print('The position of ({row}, {col}) is already occupied, try a unused space.')
+            row = int(input("Enter row: "))
+            col = int(input("Enter column: "))
+      
         
         #Return the row and column
         return row, col
