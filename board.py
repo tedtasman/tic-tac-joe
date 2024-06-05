@@ -9,9 +9,6 @@ Godspeed.
 
 """
 
-
-
-
 X = 1
 O = 2
 
@@ -73,14 +70,16 @@ class Board:
         #Check diagonal winner 
         if self.grid[0][0] == self.grid[1][1] == self.grid[2][2] and self.grid[0][0] != 0:
             return self.grid[0][0]
-        if self.grid[0][2] == self.grid[1][1] == self.grid[2][0] and self.grid[0][2] != 0:
+        elif self.grid[0][2] == self.grid[1][1] == self.grid[2][0] and self.grid[0][2] != 0:
             return self.grid[0][2]
         
         #Check for tie?
-        if all(all(x != 0 for x in row) for row in self.grid):
-            return 0
+        elif all(all(x != 0 for x in row) for row in self.grid):
+            return 3
         # if 3 in a row return winner, else None?
 
+        else: #if no winner and game not over
+            return 0
     
     def __str__(self):
         out = '\n'

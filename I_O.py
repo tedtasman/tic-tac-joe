@@ -9,11 +9,15 @@ the user has inputted. Other methods are to be implemented in the future when th
 is developed.
 
 """
+import board as bd
+
 
 class InOut:
+    
     def __init__(self,board):
         self.board = board
     
+
     def retrieveInput(self):
         
         """
@@ -22,35 +26,25 @@ class InOut:
         store it in the row and column variables.
         
         """
-
-        print('Enter Your move:\n')
-        row = int(input("Enter row: "))
-        col = int(input("Enter column: "))
-        
-        #Error checking for invalid row or column & checking for occupied space
-        while (row < 0 or row > 2 or col < 0 or col > 2) or (self.board.grid[row][col] != 0):
-          if row < 0 or row > 2 or col < 0 or col > 2:
-            print('Invalid row or column, try again')
-            row = int(input("Enter row: "))
-            col = int(input("Enter column: "))
-          elif self.board.grid[row][col] != 0:
-            print('The position of ({row}, {col}) is already occupied, try a unused space.')
-            row = int(input("Enter row: "))
-            col = int(input("Enter column: "))
       
+        print('Enter Your move:\n')
         
-        #Return the row and column
+        while True: # loop until valid input
+
+          row = int(input("Enter row: ")) - 1
+          col = int(input("Enter column: ")) - 1
+
+          if row < 0 or row > 2 or col < 0 or col > 2: # if inputs out of range
+            print('Invalid row or column, try again.')
+
+          elif self.board.grid[row][col] != 0: # if inputs occupied
+            print('The position of ({}, {}) is already occupied, try a unused space.'.format(row+1, col+1))
+      
+          else: # if all passed
+             break # escape
+      
         return row, col
-    
-    def moveMaker(self,row,col):
-        """
 
-        This method takes the users inputs and plays them on the board. 
-
-        """
-
-        if row and col != None:
-          self.board.playMove(row,col)
 
     def runFree(self):
         
@@ -62,7 +56,21 @@ class InOut:
         
         """
 
-        while not self.board.gameWon():
+        # main game loop
+        while self.board.gameWon() == 0:
             row, col = self.retrieveInput()
-            self.moveMaker(row,col)
+            self.board.playMove(row,col)
             print(self.board)
+        
+        # result output
+        outcome = self.board.gameWon()
+        if outcome == 1:
+            print('Player X wins.')
+        elif outcome == 2:
+            print('Player O wins.')
+        else:
+           print("It's a draw.")
+
+board = bd.Board()
+io = InOut(board)
+io.runFree()
