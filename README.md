@@ -56,5 +56,8 @@ The model is evaluated on a separate test dataset to measure its accuracy and pe
 - **Reinforcement Learning**: Explore reinforcement learning techniques to improve the AI's gameplay.
 - **Generalization**: Test the model's performance against different strategies and improve its robustness.
 
+## Changelog
+All notable changes to this project will be documented in the [CHANGELOG](CHANGELOG.md).
+
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for more details.
