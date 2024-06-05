@@ -57,4 +57,4 @@ The model is evaluated on a separate test dataset to measure its accuracy and pe
 - **Generalization**: Test the model's performance against different strategies and improve its robustness.
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for more details.
