@@ -1,4 +1,4 @@
-# Tic-Tac-Joe: A Generative Tic-Tac-Toe Mfodel
+# Tic-Tac-Joe: A Generative Tic-Tac-Toe Model
 
 ## Authors
 This project was created by Benjamin Rodgers and Theodore Tasman
