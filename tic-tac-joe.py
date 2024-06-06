@@ -79,11 +79,13 @@ def winnerDeter(board):
     else:
         return 0
     
+    
+iterations = int(input("Set iterations: "))
 
 # run training
 model = __buildModel()
 
-for i in range(1000):  # Play 1,000 games
+for i in range(iterations):  # Play 1,000 games
     board = bd.Board()
 
     # for at most 9 moves
