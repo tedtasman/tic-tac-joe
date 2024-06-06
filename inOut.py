@@ -9,6 +9,7 @@ the user has inputted. Other methods are to be implemented in the future when th
 is developed.
 
 """
+
 import board as bd
 
 
@@ -70,7 +71,3 @@ class InOut:
             print('Player O wins.')
         else:
            print("It's a draw.")
-
-board = bd.Board()
-io = InOut(board)
-io.runFree()

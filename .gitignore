@@ -1,1 +1,5 @@
 __pycache__
+mypy.ini
+Tic-Tac-Joe.code-workspace
+.venv
+.mypy_cache

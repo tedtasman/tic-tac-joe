@@ -39,19 +39,26 @@ class Board:
         else:
             return '-'
 
+    def validMove(self, row, col):
+
+        if row < 0 or row > 2 or col < 0 or col > 2:
+            # raise ValueError('Invalid row or column, try a proper number')
+            return False
+        
+        elif self.grid[row][col] != 0:
+            # raise ValueError('Position ({row}, {coulmn}) already occupied, try a differnet location.')
+            return False
+        
+        else:
+            return True
 
     #inserts current player's token to given location on grid
     def playMove(self, row, col):
 
-        if row < 0 or row > 2 or col < 0 or col > 2:
-            raise ValueError('Invalid row or column, try a proper number')
-        
-        if self.grid[row][col] != 0:
-            raise ValueError('Position ({row}, {coulmn}) already occupied, try a differnet location.')
-
-        self.grid[row][col] = self.nextMove # update grid
-
-        self.__flipTurn() # flip turn
+        if self.validMove(row, col):
+            self.grid[row][col] = self.nextMove # update grid
+            self.__flipTurn() # flip turn
+            
 
 
     # determines if winner of the game, returns winner or none
