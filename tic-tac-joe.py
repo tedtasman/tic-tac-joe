@@ -83,7 +83,7 @@ def winnerDeter(board):
 # run training
 model = __buildModel()
 
-for i in range(2):  # Play 1,000 games
+for i in range(1000):  # Play 1,000 games
     board = bd.Board()
 
     # for at most 9 moves
