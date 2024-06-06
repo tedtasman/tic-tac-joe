@@ -10,9 +10,6 @@ is developed.
 
 """
 
-import board as bd
-
-
 class InOut:
     
     def __init__(self,board):
