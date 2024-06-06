@@ -10,6 +10,7 @@ import board as bd
 import inOut as io
 import numpy as np
 import tensorflow as tf
+import time
 
 
 def __buildModel():
@@ -82,7 +83,7 @@ def winnerDeter(board):
 # run training
 model = __buildModel()
 
-for i in range(1000):  # Play 1,000 games
+for i in range(2):  # Play 1,000 games
     board = bd.Board()
 
     # for at most 9 moves
@@ -112,29 +113,44 @@ for i in range(1000):  # Play 1,000 games
             print(f'Iteration {i} ended in {j + 1} moves with result {result}')
             break
 
+again = ''
+
 while True:  # Play games until the user decides to quit
+    
+    # Ask the user if they want to play
+    play = 'foo'
+    # repeat until answered
+    while True:
+        # if invalid answer
+        if play.lower() != "yes" and play.lower() != "y" and play.lower() != "no" and play.lower() != "n":
+               # ask again
+               play = input(f"\nDo you want to play {again}? (yes/no) ")
+        else:
+            break
+
+    if play.lower() == "no" or play.lower() == "n":
+        break
+
     board = bd.Board()
     inOut = io.InOut(board)
     while board.gameWon() == 0:
         if board.nextMove == 1:  # AI's turn
-            vectorInput = boardStateValue(board)
-            probabilities = model.predict(vectorInput.reshape(1,-1))[0]
-            action = np.argmax(probabilities)
-            row, col = divmod(action, 3)
+            print("\nJoe's Move:")
+            time.sleep(1)
+            row, col = getAction(board, model)
             board.playMove(row, col)
+            print(board)
         else:  # Human's turn
             row,col = inOut.retrieveInput()
             board.playMove(row, col)
+            print(board)
 
     # Print the result of the game
     if board.gameWon() == 1:
-        print("AI wins!")
+        print("Joe wins!")
     elif board.gameWon() == 2:
         print("You win!")
     else:
         print("It's a draw!")
 
-    # Ask the user if they want to play again
-    play_again = input("Do you want to play again? (yes/no) ")
-    if play_again.lower() != "yes":
-        break    
+    again = 'again'
