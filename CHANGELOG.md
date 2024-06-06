@@ -8,9 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ## [1.0.0] - 2024-06-05
+### Added
 - Neural network to play tic-tac-toe
 - Training loop to train AI
-- Functionality to play against AI
+### Issues
+- Playing against trained AI broken - infinite loop
 
 ## [0.3.0] - 2024-06-05
 ### Added
