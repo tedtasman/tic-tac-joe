@@ -32,7 +32,7 @@ class InOut:
           row = int(input("Enter row: ")) - 1
           col = int(input("Enter column: ")) - 1
 
-          if row < 0 or row > 2 or col < 0 or col > 2: # if inputs out of range
+          if row < 0 or row > 2 or col < 0 or col > 2 or row == '' or col == '' : # if inputs out of range
             print('Invalid row or column, try again.')
 
           elif self.board.grid[row][col] != 0: # if inputs occupied

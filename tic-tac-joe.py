@@ -6,17 +6,21 @@ This is the main AI training file. It builds the model, and iteratively updates 
 
 """
 
+import os
 import board as bd
 import inOut as io
 import numpy as np
 import tensorflow as tf
+import random as rd
 import time
 
+version = '1.2.0'
 
 def __buildModel():
     model = tf.keras.models.Sequential([
         tf.keras.layers.Dense(64, activation='relu', input_shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer
+        tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 2 
         tf.keras.layers.Dense(9, activation='softmax')  # Output layer (9 possible actions)
     ])
 
@@ -68,7 +72,6 @@ def getAction(board, model):
     raise ValueError("No valid moves but game is not over.")
 
 
-
 # determine winner
 def winnerDeter(board):
     win = board.gameWon()
@@ -79,80 +82,207 @@ def winnerDeter(board):
     else:
         return 0
     
+
+def trainModel(version=None, iteration=None):
+    """
+
+    This is the training function we have described for the model. It allows the model to gain
+    experience on the game and learn. This is reinforcement learning at its finest. You can set iterations
+    to make it more and more experienced. 
     
-iterations = int(input("Set iterations: "))
+    """
 
-# run training
-model = __buildModel()
+    # check if new model needs to be made
+    offset = 0
+    if version and iteration:
+        offset = int(iteration)
+        model = loadModel(version, iteration)
 
-for i in range(iterations):  # Play 1,000 games
-    board = bd.Board()
-
-    # for at most 9 moves
-    for j in range(9):
-
-        # get vector of board state
-        vectorInput = boardStateValue(board) 
-        # get move
-        row, col = getAction(board, model)
-        # play move
-        board.playMove(row, col)
-        # check for winner
-        result = winnerDeter(board)
-
-        # Update the model
-        # get probibilities for each move
-        probabilities = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
-        # set target to current probabilities
-        target = probabilities[:]
-        # update probability of chosen square to reflect result
-        target[3 * row + col] = result
-        # retrain model
-        model.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
-
-        # escape to next round if there was a winner
-        if result != 0:
-            print(f'Iteration {i} ended in {j + 1} moves with result {result}')
-            break
-
-again = ''
-
-while True:  # Play games until the user decides to quit
-    
-    # Ask the user if they want to play
-    play = 'foo'
-    # repeat until answered
-    while True:
-        # if invalid answer
-        if play.lower() != "yes" and play.lower() != "y" and play.lower() != "no" and play.lower() != "n":
-               # ask again
-               play = input(f"\nDo you want to play {again}? (yes/no) ")
-        else:
-            break
-
-    if play.lower() == "no" or play.lower() == "n":
-        break
-
-    board = bd.Board()
-    inOut = io.InOut(board)
-    while board.gameWon() == 0:
-        if board.nextMove == 1:  # AI's turn
-            print("\nJoe's Move:")
-            time.sleep(1)
-            row, col = getAction(board, model)
-            board.playMove(row, col)
-            print(board)
-        else:  # Human's turn
-            row,col = inOut.retrieveInput()
-            board.playMove(row, col)
-            print(board)
-
-    # Print the result of the game
-    if board.gameWon() == 1:
-        print("Joe wins!")
-    elif board.gameWon() == 2:
-        print("You win!")
     else:
-        print("It's a draw!")
+        model = __buildModel()
 
-    again = 'again'
+    iterations = int(input("Set iterations: "))
+    saveInterval = int(input("Set save interval: "))
+
+    # run training
+    for i in range(iterations):  # Play 1,000 games
+        board = bd.Board()
+
+        # for at most 9 moves
+        for j in range(9):
+
+            # get vector of board state
+            vectorInput = boardStateValue(board) 
+            # get move
+            row, col = getAction(board, model)
+            # play move
+            board.playMove(row, col)
+            # check for winner
+            result = winnerDeter(board)
+
+            # Update the model
+            # get probibilities for each move
+            probabilities = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
+            # set target to current probabilities
+            target = probabilities[:]
+            # update probability of chosen square to reflect result
+            target[3 * row + col] = result
+            # retrain model
+            model.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
+
+            # escape to next round if there was a winner
+            if result != 0:
+                break
+                
+        print("Iteration {} ended in {} moves with result {}".format(i + offset + 1, j + 1, result))
+        
+        if (i + offset + 1) % saveInterval == 0:
+            saveModel(model, 'joe-v{}-i{}'.format(version, (i + offset + 1)))
+
+    return model
+
+
+def playUser(model):
+
+    """
+    This is a function that allows the user to play against the model that has been trained.
+    Very straight forward.
+    """
+    
+    play = 'foo'
+    
+    while play.lower() not in ['no', 'n']:  # Play games until the user decides to quit
+
+        board = bd.Board()
+        inOut = io.InOut(board)
+        joeTurn = rd.randint(1,2)
+        while board.gameWon() == 0:
+            if board.nextMove == joeTurn:  # AI's turn
+                print("\nJoe's Move:")
+                time.sleep(1)
+                row, col = getAction(board, model)
+                board.playMove(row, col)
+                print(board)
+            else:  # Human's turn
+                row,col = inOut.retrieveInput()
+                board.playMove(row, col)
+                print(board)
+
+        # Print the result of the game
+        if board.gameWon() == joeTurn:
+            print("Joe wins!")
+        elif board.gameWon() == 0:
+            print("It's a draw!")
+        else:
+            print("You win!")
+
+        # Ask the user if they want to play again
+        play = input("\nDo you want to play again? (yes/no) ")
+        # repeat until valid answer
+        while play.lower() not in ["yes", "y", "no", "n"]:
+            # ask again
+            play = input("\nDo you want to play again? (yes/no) ")
+
+
+def saveModel(model, name):
+
+    """
+    This saves a model to a desired path for later use.
+    """
+
+    model.save("./models/{}.keras".format(name))
+    print("Model ./models/{}.keras saved.".format(name))
+
+
+def loadModel(version, iteration):
+    """
+    This loads a model from the desired path for use. 
+    """
+    #name = getFileName(version, iteration)
+    if type(version) is not str:
+        raise ValueError("Version must be input as a string")
+    
+    if type(iteration) is not int:
+        raise ValueError("Iteration must be input as an int")
+
+    modelPath = "./models/joe-v{}-i{}.keras".format(version, str(iteration))
+    if os.path.isfile(modelPath):
+        model = tf.keras.models.load_model(modelPath)
+        print("Model {} loaded with optimizer state.".format(modelPath))
+        return model
+    else:
+        print("Sorry pal, that file doesn't exist.")
+        return None
+
+
+
+def deleteAllModels___RED_BUTTON():
+
+    confirm = input('Are you sure you want to delete all models? This cannot be undone.\nType "CONFIRM" to proceed: ')
+    if confirm not in ['CONFIRM']:
+        return
+
+    for model in os.listdir('./models/'):
+        filePath = os.path.join('./models/', model)
+        try:
+            if filePath != './models/joeRandom.keras/':
+                os.remove(filePath)
+                print("Deleted model: {}".format(filePath))
+            
+        except Exception as e:
+            print("Failed to delete {}. Reason: {}".format(filePath, e))
+
+
+def playModels(model1, model2):
+
+    games = 0
+    # repeat until valid answer
+    while not isinstance(games, int) or int(games) < 1:
+        games = int(input("\nHow many games to play? "))
+            
+    wins = 0
+
+    for i in range(games): 
+        model1Turn = rd.randint(1,2)
+        board = bd.Board()
+        while board.gameWon() == 0:
+            if board.nextMove == model1Turn:  # Model 1's turn
+                row, col = getAction(board, model1)
+                board.playMove(row, col)
+            else:  # Model 2's turn
+                row, col = getAction(board, model2)
+                board.playMove(row, col)
+
+        # Update the win count
+        if board.gameWon() == model1Turn:
+            wins += 1
+
+        print("MODEL 1 STATS: \t Wins: {} \t Games Played: {} \t Win/Loss: {:0.3f}".format(wins, (i + 1), wins / (i + 1)))
+
+
+'''def getFileName(version, iteration):
+
+    if type(version) is not str:
+        raise ValueError("Version must be input as a string")
+    
+    if type(iteration) is not int:
+        raise ValueError("Iteration must be input as an int")
+
+    testname = "./models/joe-v{}-i{}.keras".format(version, str(iteration))
+    if os.path.isfile(testname):
+        return testname
+    else:
+        print("Sorry pal, that file doesn't exist.")
+        return None'''
+    
+
+
+
+
+
+
+
+# ============= MAIN ====================================================================================
+'''if __name__ == "__main__":
+    m1000 = loadModel('joe-v1.0.1-i1000')
+    m250 = loadModel('joe-v1.0.1-i250')'''

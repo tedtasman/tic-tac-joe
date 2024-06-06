@@ -1,6 +1,6 @@
 __pycache__
 mypy.ini
-Tic-Tac-Joe.code-workspace
+wsp-joe.code-workspace
 .venv
 .mypy_cache
 test.py
