@@ -15,7 +15,7 @@ import random as rd
 import time
 import curses
 
-build = '2.4.0'
+build = '2.4.1'
 
 # ======== HYPERPARAMETERS ===========
 
@@ -130,6 +130,9 @@ def trainModel(version=None, iteration=None):
         # for at most 9 moves
         for j in range(9):
 
+            # get qValues (probablities)
+            qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
+
             # EXPLORE (pick random square)
             if rd.random() < epsilon:
 
@@ -145,8 +148,6 @@ def trainModel(version=None, iteration=None):
             
             # EXPLOIT (use model probabilities)
             else:
-                # get qValues (probablities)
-                qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
                 # get best action
                 action = bestValidAction(board, qValues)
                 # convert to row, col
@@ -157,13 +158,12 @@ def trainModel(version=None, iteration=None):
             # check for winner
             result = winnerDeter(board)
 
-            # Update the model
             # set target to current probabilities
-            qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
             target = qValues[:]
 
             # if there was a winner
             if result != 0:
+
                 # if O up next, X just went
                 if board.nextMove == 2:
                     target[3 * row + col] = result
@@ -183,6 +183,9 @@ def trainModel(version=None, iteration=None):
 
             # retrain model
             model.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
+            
+            # update board state
+            vectorInput = boardStateValue(board) 
 
             # escape to next round if there was a winner
             if result != 0:
@@ -348,11 +351,13 @@ def playModels(model1, model2):
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    joeRandom = loadModel('0', 0)
+
+    trainModel()
+    
+    '''joeRandom = loadModel('0', 0)
     a1000 = loadModel('1.0.0', 1000)
     b500 = loadModel('1.2.0', 500)
     b1000 = loadModel('1.2.0', 1000)
     c500 = loadModel('2.0.0', 500)
     d500 = loadModel('2.1.0', 500)
-    e500 = loadModel('2.2.0', 500)
-    trainModel()
+    e500 = loadModel('2.2.0', 500)'''
