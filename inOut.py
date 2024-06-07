@@ -1,7 +1,7 @@
 """
 
 06/04/2024
-@authors: Benjamin Rodgers and (CEO) Theodore Tasman
+@authors: (Managing Director) Benjamin Rodgers and (CEO) Theodore Tasman
 
 This is the input output class for the Tic Tac Toe Game. 
 The class will take the input from the user and can run methods based on what
@@ -45,14 +45,6 @@ class InOut:
 
 
     def runFree(self):
-        
-        """
-        
-        This method is underdeveloped. The goal is for the AI to use this to know
-        when to stop playing. The AI has not been developed yet, so this method is
-        not really needed just yet. 
-        
-        """
 
         # main game loop
         while self.board.gameWon() == 0:

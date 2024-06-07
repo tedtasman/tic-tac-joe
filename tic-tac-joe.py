@@ -1,6 +1,6 @@
 """
 06/05/2024
-@authors: Benjamin Rodgers and (CEO) Theodore Tasman
+@authors: (Managing Director) Benjamin Rodgers and (CEO) Theodore Tasman
 
 This is the main AI training file. It builds the model, and iteratively updates it depending on the game results.
 
@@ -8,19 +8,23 @@ This is the main AI training file. It builds the model, and iteratively updates 
 
 import os
 import board as bd
-import inOut as io
+import ioBoard as io
 import numpy as np
 import tensorflow as tf
 import random as rd
 import time
+import curses
 
 version = '1.2.0'
 
 def __buildModel():
     model = tf.keras.models.Sequential([
         tf.keras.layers.Dense(64, activation='relu', input_shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
+        #tf.keras.layers.Dropout(0.5),  # Dropout layer to prevent overfitting
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer
+        #tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 2 
+        #tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(9, activation='softmax')  # Output layer (9 possible actions)
     ])
 
@@ -142,7 +146,7 @@ def trainModel(version=None, iteration=None):
     return model
 
 
-def playUser(model):
+def __runUserPlay(stdscr, model):
 
     """
     This is a function that allows the user to play against the model that has been trained.
@@ -151,37 +155,50 @@ def playUser(model):
     
     play = 'foo'
     
-    while play.lower() not in ['no', 'n']:  # Play games until the user decides to quit
+    while True:  # Play games until the user decides to quit
 
         board = bd.Board()
-        inOut = io.InOut(board)
         joeTurn = rd.randint(1,2)
+        curses.curs_set(0) # hide the cursor
+        board.drawBoard(stdscr)
+
         while board.gameWon() == 0:
             if board.nextMove == joeTurn:  # AI's turn
-                print("\nJoe's Move:")
+                time.sleep(0.2)
+                stdscr.addstr(7, 0, "Joe's Move...")
+                stdscr.refresh()
                 time.sleep(1)
+                stdscr.refresh()
                 row, col = getAction(board, model)
                 board.playMove(row, col)
-                print(board)
+                board.drawBoard(stdscr)
             else:  # Human's turn
-                row,col = inOut.retrieveInput()
-                board.playMove(row, col)
-                print(board)
+                io.getMove(stdscr, board, True)
 
         # Print the result of the game
         if board.gameWon() == joeTurn:
-            print("Joe wins!")
+            stdscr.addstr(7, 0, "Joe wins!")
         elif board.gameWon() == 0:
-            print("It's a draw!")
+            stdscr.addstr(7, 0, "It's a draw!")
         else:
-            print("You win!")
+            stdscr.addstr(7, 0, "You win!")
 
         # Ask the user if they want to play again
-        play = input("\nDo you want to play again? (yes/no) ")
+        stdscr.addstr("\nDo you want to play again? (yes/no) ")
         # repeat until valid answer
-        while play.lower() not in ["yes", "y", "no", "n"]:
-            # ask again
-            play = input("\nDo you want to play again? (yes/no) ")
+        while True:
+            play = stdscr.getkey()
+            if play.lower() in ["yes", "y", "no", "n"]:
+                break
+            stdscr.addstr("\nInvalid input. Please enter 'yes' or 'no'.\n")
+            stdscr.refresh()            
+
+        if play.lower() in ['no', 'n']:
+            break
+
+
+def playUser(model):
+    curses.wrapper(__runUserPlay, model)
 
 
 def saveModel(model, name):
@@ -283,6 +300,7 @@ def playModels(model1, model2):
 
 
 # ============= MAIN ====================================================================================
-'''if __name__ == "__main__":
-    m1000 = loadModel('joe-v1.0.1-i1000')
-    m250 = loadModel('joe-v1.0.1-i250')'''
+if __name__ == "__main__":
+    i1000 = loadModel('1.0.1', 1000)
+    i250 = loadModel('1.0.1', 250)
+    playUser(i250)

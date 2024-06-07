@@ -1,6 +1,6 @@
 """
 06/03/2024
-@authors: Benjamin Rodgers and (CEO) Theodore Tasman
+@authors: (Managing Director) Benjamin Rodgers and (CEO) Theodore Tasman
 
 This is the board class for Tic Tac Toe. It describes the making of the board (3x3 grid) and the rules to play it.
 This has methods that flip the turns between X & O, if the game is one or tied, and if the user made an error. 
@@ -8,6 +8,9 @@ This has methods that flip the turns between X & O, if the game is one or tied, 
 Godspeed.
 
 """
+
+import curses
+
 
 X = 1
 O = 2
@@ -30,14 +33,14 @@ class Board:
 
 
     # returns token corresponding to value (1 -> X, 2 -> O, ? -> -)
-    def __decodeMove(self, move):
+    def decodeMove(self, move):
 
         if move == 1:
             return 'X'
         elif move == 2:
             return 'O'
         else:
-            return '-'
+            return ' '
 
     def validMove(self, row, col):
 
@@ -87,12 +90,48 @@ class Board:
 
         else: #if no winner and game not over
             return 0
+        
+    
+    # draw pretty board for in-place rendering
+    def drawBoard(self, stdscr, rowHighlighted=None, colHighlighted=None):
+        
+        stdscr.clear()
+
+        # iterate through all squares
+        for row in range(3):
+
+            for col in range(3):
+
+                # if row matches selected and col not selected yet
+                if row == rowHighlighted and colHighlighted==None:
+                    # print row in highlight
+                    stdscr.addstr(row * 2, col * 4, ' {} '.format(self.decodeMove(self.grid[row][col])), curses.A_REVERSE)
+
+                # if both row and column match
+                elif  row == rowHighlighted and col == colHighlighted:
+                    # print spot in highlight
+                    stdscr.addstr(row * 2, col * 4, ' {} '.format(self.decodeMove(self.grid[row][col])), curses.A_REVERSE)
+
+                else:
+                    # print normal
+                    stdscr.addstr(row * 2, col * 4, ' {} '.format(self.decodeMove(self.grid[row][col])))
+
+                # add vertical bars
+                if col < 2:
+                    stdscr.addstr(row * 2, col * 4 + 3, '|')
+            
+            # add horizontal bars
+            if row < 2:
+                stdscr.addstr(row * 2 + 1, 0, '---+---+---')
+        
+        stdscr.refresh()
+
     
     def __str__(self):
         out = '\n'
         for row in self.grid:
             for i in row:
-                out += ' ' + self.__decodeMove(i) + ' '
+                out += ' ' + self.decodeMove(i) + ' '
             out += '\n'
         return out
     
