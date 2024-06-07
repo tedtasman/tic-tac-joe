@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [2.3.0] - 2024/06/07
+### Model:
+- One dropout
+-Two hidden
+### Hyperparameters:
+- epsilon = 1-0.9**(iterations/i) (exponential decay; more random in the beginning)
+- discountFactor = 0.9
+- learningRate = 0.0024
+
+## [2.2.0] - 2024/06/07
+### Hyperparameters:
+- epsilon = 0.1
+- discountFactor = 0.9
+- learningRate = 0.0024
+
+## [2.1.0] - 2024/06/07
+### Hyperparameters:
+- epsilon = 0.1
+- discountFactor = 0.9
+- learningRate = 0.0012
+
+## [2.0.0] - 2024/06/07
+### Added
+- Q Learning
+- Fancy play UI
+### Hyperparameters:
+- epsilon = 0.1
+- discountFactor = 0.9
+- learningRate = 0.0001
+
 ## [1.2.0] - 2024-06-06
 ### Added
 - Improved usability overall
