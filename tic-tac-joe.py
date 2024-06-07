@@ -15,7 +15,7 @@ import random as rd
 import time
 import curses
 
-build = '2.4.1'
+build = '3.0.0'
 
 # ======== HYPERPARAMETERS ===========
 
