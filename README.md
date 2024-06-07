@@ -52,9 +52,7 @@ The training process involves putting two iterations of the model against each o
 The model is evaluated on a separate test dataset to measure its accuracy and performance in predicting moves. Evaluation metrics include accuracy and loss.
 
 ## Future Work
-- **User Interface**: Develop an interactive user interface for playing against the AI.
-- **Reinforcement Learning**: Explore reinforcement learning techniques to improve the AI's gameplay.
-- **Generalization**: Test the model's performance against different strategies and improve its robustness.
+- **Model Training:** Explore more methods for model training to achieve a better outcome.
 
 ## Changelog
 All notable changes to this project will be documented in the [CHANGELOG](CHANGELOG.md).
