@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AI vs AI mode
 ### Fixed
 - Stuck in user vs AI bug
+### Issues
+- Model is learning but not improving. Seems to be overfitting.
 
 ## [1.0.1] - 2024-06-05
 ### Fixed
