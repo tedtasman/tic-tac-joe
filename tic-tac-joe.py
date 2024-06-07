@@ -126,6 +126,7 @@ def trainModel(version=None, iteration=None):
         board = bd.Board()
         # get vectorInput before game (all 0s)
         vectorInput = boardStateValue(board) 
+        gameStates = [(vectorInput, None)] # KEEP TRACK OF PAST GAME STATES AND ACTIONS TO BACKPROPAGATE
 
         # for at most 9 moves
         for j in range(9):
@@ -155,13 +156,48 @@ def trainModel(version=None, iteration=None):
 
             # play move
             board.playMove(row, col)
+
+            # update vectorInput
+            vectorInput = boardStateValue(board)
+
+            # APPEND MOVE TO GAMESTATES
+            gameStates.append((vectorInput, action))
+
             # check for winner
             result = winnerDeter(board)
 
-            # set target to current probabilities
-            target = qValues[:]
+            # ATTEMPTING BACKPROPAGATION VVVVVVVVVVVVVV
+            # game ended
+            if result != 0:
+                break
 
-            # if there was a winner
+        playerTurn = 1 # track whos turn it was. Ensures that the result is correct +/- for current player
+        # iterate through past games
+        for state, action in reversed(gameStates):
+
+            # update target to qvalues of current state
+            target = model.predict(state.reshape(1,-1), verbose=0)[0]
+
+            # if last player to move was X (next move is O)
+            if board.nextMove == 2:
+
+                # update target of that action to final result * playerTurn 
+                target[action] = result * playerTurn
+            
+            # if last player to move was O (next move is X)
+            else:
+
+                # update target of that action to final result * playerTurn
+                target[action] = result * playerTurn
+            
+            # retrain model
+            model.fit(state.reshape(1,-1), np.array([target]), verbose=0)
+
+            playerTurn *= -1 # invert playerturn
+
+
+            # ORIGINAL DESIGN VVVVVVVVVVVVVVVVVVVVVVVVV
+            '''# if there was a winner
             if result != 0:
 
                 # if O up next, X just went
@@ -189,7 +225,7 @@ def trainModel(version=None, iteration=None):
 
             # escape to next round if there was a winner
             if result != 0:
-                break
+                break'''
                 
         print("Iteration {} ended in {} moves with result {}".format(i + offset + 1, j + 1, result))
         
@@ -202,13 +238,14 @@ def trainModel(version=None, iteration=None):
 # get best action (board, qValues) -> qvalue
 def bestValidAction(board, qValues):
 
-    # sort qValues
-    qValuesSorted = np.argsort(qValues)[::-1]
+    # sort qValues highest to lowest
+    qValuesSorted = np.sort(qValues, -1, 'mergesort')[::-1]
 
+    # iterate through qValues
     for i in range(len(qValuesSorted)):
         
         # get row/column from qValue
-        row, col = divmod(qValuesSorted[i], 3)
+        row, col = divmod(i, 3)
 
         # if current action is valid
         if board.validMove(row, col):
