@@ -15,7 +15,7 @@ import random as rd
 import time
 import curses
 
-build = '2.4.2'
+build = '2.4.3'
 
 # ======== HYPERPARAMETERS ===========
 
@@ -28,8 +28,7 @@ tieReward = 0.2
 
 def __buildModel():
     model = tf.keras.models.Sequential([
-        tf.keras.layers.Dense(64, activation='relu', input_shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
-        tf.keras.layers.Dropout(0.5),  # Dropout layer to prevent overfitting
+        tf.keras.layers.Dense(64, activation='relu', input_shape=(10,)),  # Input layer (9 cells in Tic Tac Toe)
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 2 
@@ -47,7 +46,7 @@ def __buildModel():
 # Board -> Input function to convert the board state to a one off value
 def boardStateValue(board):
     
-    vectorInput = np.zeros(9) #returns array of given shape (9) and its filled with zeroes
+    vectorInput = np.zeros(10) #returns array of given shape (9) and its filled with zeroes
 
     # iterate through rows & cols of board
     for row in range(3):
@@ -62,16 +61,17 @@ def boardStateValue(board):
             elif board.grid[row][col] == 2:
                 # set cooresponding index to -1
                 vectorInput[3*row + col] = -1
+                
+    vectorInput[9] = 1 if board.nextMove == 1 else -1
 
     return vectorInput
 
 
 # Choose action (board, model) -> choose an action based on prediction
-def getAction(board, model):
+def getAction(vectorInput, board, model):
     
-    vectorInput = boardStateValue(board)
     # get probabilities of each action
-    probabilities = model.predict(vectorInput.reshape(1,-1), verbose=0)
+    probabilities = model.predict(vectorInput.reshape(-1,), verbose=0)
     # sort actions by best probability
     sortedProbabilites = np.argsort(probabilities[0])[::-1]
 
@@ -81,7 +81,7 @@ def getAction(board, model):
         row, col = divmod(action, 3)
 
         # if current action is valid
-        if board.validMove(row, col):
+        if action < 9 and board.validMove(row, col):
             return row, col # return current action
         
     raise ValueError("No valid moves but game is not over.")
@@ -122,13 +122,16 @@ def trainModel(version=None, iteration=None):
 
     # run training
     for i in range(iterations):  # Play 1,000 games
-
+        
         board = bd.Board()
         # get vectorInput before game (all 0s)
         vectorInput = boardStateValue(board) 
 
         # for at most 9 moves
         for j in range(9):
+            
+            # set vectorInput[9] to current move
+            vectorInput[9] = 1 if board.nextMove == 1 else -1
 
             # get qValues (probablities)
             qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
@@ -241,7 +244,8 @@ def __runUserPlay(stdscr, model):
                 stdscr.refresh()
                 time.sleep(1)
                 stdscr.refresh()
-                row, col = getAction(board, model)
+                vectorInput = boardStateValue(board)
+                row, col = getAction(vectorInput, board, model)
                 board.playMove(row, col)
                 board.drawBoard(stdscr)
             else:  # Human's turn
@@ -250,7 +254,7 @@ def __runUserPlay(stdscr, model):
         # Print the result of the game
         if board.gameWon() == joeTurn:
             stdscr.addstr(7, 0, "Joe wins!")
-        elif board.gameWon() == 0:
+        elif board.gameWon() == 3:
             stdscr.addstr(7, 0, "It's a draw!")
         else:
             stdscr.addstr(7, 0, "You win!")
@@ -335,11 +339,12 @@ def playModels(model1, model2):
         model1Turn = rd.randint(1,2)
         board = bd.Board()
         while board.gameWon() == 0:
+            vectorInput = boardStateValue(board)
             if board.nextMove == model1Turn:  # Model 1's turn
-                row, col = getAction(board, model1)
+                row, col = getAction(vectorInput, board, model1)
                 board.playMove(row, col)
             else:  # Model 2's turn
-                row, col = getAction(board, model2)
+                row, col = getAction(vectorInput, board, model2)
                 board.playMove(row, col)
 
         # Update the win count
