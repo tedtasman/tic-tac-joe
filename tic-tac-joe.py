@@ -15,7 +15,7 @@ import random as rd
 import time
 import curses
 
-build = '2.4.1'
+build = '2.4.2'
 
 # ======== HYPERPARAMETERS ===========
 
@@ -166,9 +166,9 @@ def trainModel(version=None, iteration=None):
 
                 # if O up next, X just went
                 if board.nextMove == 2:
-                    target[3 * row + col] = result
-                else: 
                     target[3 * row + col] = -result
+                else: 
+                    target[3 * row + col] = result
             
             # if no next move (current game was a tie)
             elif bestValidAction == -1:
