@@ -5,7 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+# Unreleased
+
+## [4.0.1] - 2024/06/08
+### Model: 
+- Use 1x10 layout to include current move
+### Added:
+- Better UI when running training
+### Fixed:
+- Issues with bestValidAction returning nonsense indices
+
+## [3.0.0] - 2024/06/07 **CURRENTLY ABANDONED**
+### Model 
+- attempting backprop
+
+# Released
+
+## [2.4.2] - 2024/06/07 
+### Fixed
+- inverted rewards
+- various bugs in training code
+### Issues
+- Model seemingly learns nothing
+
+## [2.3.0] - 2024/06/07
+### Model:
+- One dropout
+-Two hidden
+### Hyperparameters:
+- epsilon = 1-0.9**(iterations/i) (exponential decay; more random in the beginning)
+- discountFactor = 0.9
+- learningRate = 0.0024
+
+## [2.2.0] - 2024/06/07
+### Hyperparameters:
+- epsilon = 0.1
+- discountFactor = 0.9
+- learningRate = 0.0024
+
+## [2.1.0] - 2024/06/07
+### Hyperparameters:
+- epsilon = 0.1
+- discountFactor = 0.9
+- learningRate = 0.0012
+
+## [2.0.0] - 2024/06/07
+### Added
+- Q Learning
+- Fancy play UI
+### Hyperparameters:
+- epsilon = 0.1
+- discountFactor = 0.9
+- learningRate = 0.0001
 
 ## [1.2.0] - 2024-06-06
 ### Added
