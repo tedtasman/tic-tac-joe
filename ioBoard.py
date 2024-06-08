@@ -98,7 +98,7 @@ def runGame(stdscr):
         winner = board.gameWon() # check winner
 
         # if there was a winner
-        if winner != 0 and winner != 3:
+        if winner != 0:
             board.drawBoard(stdscr) # redraw board
             stdscr.addstr(10, 0, "Player {} wins!".format(winner))  # Display the winning message
             stdscr.refresh()  # Refresh the screen to show the winning message
