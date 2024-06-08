@@ -9,8 +9,8 @@ This is the main AI training file. It builds the model, and iteratively updates 
 import os
 import board as bd
 import ioBoard as io
-import numpy as np
-import tensorflow as tf
+import numpy as np 
+import tensorflow as tf 
 import random as rd
 import time
 import curses
@@ -19,7 +19,7 @@ build = '4.0.1'
 
 # ======== HYPERPARAMETERS ===========
 
-alpha = 0.1     # learning rate
+alpha = 0.01     # learning rate
 gamma = 0.9     # discount factor
 epsilon = 1.0   # exploration rate
 
@@ -391,8 +391,6 @@ def playModels(model1, model2):
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-
-    trainModel(build, 100)
     
     '''joeRandom = loadModel('0', 0)
     a1000 = loadModel('1.0.0', 1000)
