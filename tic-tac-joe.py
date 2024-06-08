@@ -15,20 +15,31 @@ import random as rd
 import time
 import curses
 
-version = '1.2.0'
+build = '2.4.2'
+
+# ======== HYPERPARAMETERS ===========
+
+epsilon = 0.1
+discountFactor = 0.9
+learningRate = 0.0024
+tieReward = 0.2
+
+#============================
 
 def __buildModel():
     model = tf.keras.models.Sequential([
         tf.keras.layers.Dense(64, activation='relu', input_shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
-        #tf.keras.layers.Dropout(0.5),  # Dropout layer to prevent overfitting
+        tf.keras.layers.Dropout(0.5),  # Dropout layer to prevent overfitting
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer
-        #tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 2 
-        #tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 3
+        tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(9, activation='softmax')  # Output layer (9 possible actions)
     ])
 
-    model.compile(optimizer='adam', loss='categorical_crossentropy')
+    model.compile(optimizer=tf.keras.optimizers.Adam(learningRate), loss='categorical_crossentropy')
 
     return model
 
@@ -87,6 +98,7 @@ def winnerDeter(board):
         return 0
     
 
+# train model (str version, int iteration) -> model
 def trainModel(version=None, iteration=None):
     """
 
@@ -110,29 +122,70 @@ def trainModel(version=None, iteration=None):
 
     # run training
     for i in range(iterations):  # Play 1,000 games
+
         board = bd.Board()
+        # get vectorInput before game (all 0s)
+        vectorInput = boardStateValue(board) 
 
         # for at most 9 moves
         for j in range(9):
 
-            # get vector of board state
-            vectorInput = boardStateValue(board) 
-            # get move
-            row, col = getAction(board, model)
+            # get qValues (probablities)
+            qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
+
+            # EXPLORE (pick random square)
+            if rd.random() < epsilon:
+
+                # loop until valid move generated (capped at 9 to avoid infinte loop edge case)
+                for _ in range(9): 
+                    
+                    # generate the random move
+                    row, col = np.random.randint(0,3), np.random.randint(0,3)
+
+                    # test validity, escape if valid
+                    if board.validMove(row, col):
+                        break
+            
+            # EXPLOIT (use model probabilities)
+            else:
+                # get best action
+                action = bestValidAction(board, qValues)
+                # convert to row, col
+                row, col = divmod(action, 3)
+
             # play move
             board.playMove(row, col)
             # check for winner
             result = winnerDeter(board)
 
-            # Update the model
-            # get probibilities for each move
-            probabilities = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
             # set target to current probabilities
-            target = probabilities[:]
-            # update probability of chosen square to reflect result
-            target[3 * row + col] = result
+            target = qValues[:]
+
+            # if there was a winner
+            if result != 0:
+
+                # if O up next, X just went
+                if board.nextMove == 2:
+                    target[3 * row + col] = -result
+                else: 
+                    target[3 * row + col] = result
+            
+            # if no next move (current game was a tie)
+            elif bestValidAction == -1:
+
+                # give tieReward (hyperparameter)
+                target[3 * row + col] = tieReward
+
+            # else -> calculate value of next board state
+            else:
+                newQValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
+                target[3 * row + col] = result + discountFactor * bestValidAction(board, newQValues)
+
             # retrain model
             model.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
+            
+            # update board state
+            vectorInput = boardStateValue(board) 
 
             # escape to next round if there was a winner
             if result != 0:
@@ -141,9 +194,28 @@ def trainModel(version=None, iteration=None):
         print("Iteration {} ended in {} moves with result {}".format(i + offset + 1, j + 1, result))
         
         if (i + offset + 1) % saveInterval == 0:
-            saveModel(model, 'joe-v{}-i{}'.format(version, (i + offset + 1)))
+            saveModel(model, 'joe-v{}-i{}'.format(build, (i + offset + 1)))
 
     return model
+
+
+# get best action (board, qValues) -> qvalue
+def bestValidAction(board, qValues):
+
+    # sort qValues
+    qValuesSorted = np.argsort(qValues)[::-1]
+
+    for i in range(len(qValuesSorted)):
+        
+        # get row/column from qValue
+        row, col = divmod(qValuesSorted[i], 3)
+
+        # if current action is valid
+        if board.validMove(row, col):
+
+            return i # return current qValue index
+        
+    return -1
 
 
 def __runUserPlay(stdscr, model):
@@ -277,30 +349,15 @@ def playModels(model1, model2):
         print("MODEL 1 STATS: \t Wins: {} \t Games Played: {} \t Win/Loss: {:0.3f}".format(wins, (i + 1), wins / (i + 1)))
 
 
-'''def getFileName(version, iteration):
-
-    if type(version) is not str:
-        raise ValueError("Version must be input as a string")
-    
-    if type(iteration) is not int:
-        raise ValueError("Iteration must be input as an int")
-
-    testname = "./models/joe-v{}-i{}.keras".format(version, str(iteration))
-    if os.path.isfile(testname):
-        return testname
-    else:
-        print("Sorry pal, that file doesn't exist.")
-        return None'''
-    
-
-
-
-
-
-
-
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    i1000 = loadModel('1.0.1', 1000)
-    i250 = loadModel('1.0.1', 250)
-    playUser(i250)
+
+    trainModel()
+    
+    '''joeRandom = loadModel('0', 0)
+    a1000 = loadModel('1.0.0', 1000)
+    b500 = loadModel('1.2.0', 500)
+    b1000 = loadModel('1.2.0', 1000)
+    c500 = loadModel('2.0.0', 500)
+    d500 = loadModel('2.1.0', 500)
+    e500 = loadModel('2.2.0', 500)'''
