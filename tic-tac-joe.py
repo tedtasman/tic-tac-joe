@@ -15,13 +15,17 @@ import random as rd
 import time
 import curses
 
-build = '2.4.3'
+build = '4.0.1'
 
 # ======== HYPERPARAMETERS ===========
 
-epsilon = 0.1
-discountFactor = 0.9
-learningRate = 0.0024
+alpha = 0.1     # learning rate
+gamma = 0.9     # discount factor
+epsilon = 1.0   # exploration rate
+
+epsilonDecay = 0.995
+epsilonMin = 0.1
+
 tieReward = 0.2
 
 #============================
@@ -38,7 +42,7 @@ def __buildModel():
         tf.keras.layers.Dense(9, activation='softmax')  # Output layer (9 possible actions)
     ])
 
-    model.compile(optimizer=tf.keras.optimizers.Adam(learningRate), loss='categorical_crossentropy')
+    model.compile(optimizer=tf.keras.optimizers.Adam(alpha), loss='categorical_crossentropy')
 
     return model
 
@@ -61,22 +65,23 @@ def boardStateValue(board):
             elif board.grid[row][col] == 2:
                 # set cooresponding index to -1
                 vectorInput[3*row + col] = -1
-                
+    
+    # set nextmove to correct value
     vectorInput[9] = 1 if board.nextMove == 1 else -1
 
     return vectorInput
 
 
 # Choose action (board, model) -> choose an action based on prediction
-def getAction(vectorInput, board, model):
+'''def getAction(vectorInput, board, model):
     
     # get probabilities of each action
-    probabilities = model.predict(vectorInput.reshape(-1,), verbose=0)
+    probabilities = model.predict(vectorInput.reshape(1,-1), verbose=0)
     # sort actions by best probability
-    sortedProbabilites = np.argsort(probabilities[0])[::-1]
+    sortedIndices = np.argsort(probabilities[0])[::-1]
 
     # iterate through actions
-    for action in sortedProbabilites:
+    for action in sortedIndices:
  
         row, col = divmod(action, 3)
 
@@ -84,7 +89,7 @@ def getAction(vectorInput, board, model):
         if action < 9 and board.validMove(row, col):
             return row, col # return current action
         
-    raise ValueError("No valid moves but game is not over.")
+    raise ValueError("No valid moves but game is not over.")'''
 
 
 # determine winner
@@ -119,9 +124,10 @@ def trainModel(version=None, iteration=None):
 
     iterations = int(input("Set iterations: "))
     saveInterval = int(input("Set save interval: "))
-
+    print('\n====================================================\n')
+    print('Running {} iterations with save interval {}... (ctrl + C to exit)\n'.format(iterations, saveInterval))
     # run training
-    for i in range(iterations):  # Play 1,000 games
+    for i in range(iterations - offset):  # Play 1,000 games
         
         board = bd.Board()
         # get vectorInput before game (all 0s)
@@ -129,18 +135,15 @@ def trainModel(version=None, iteration=None):
 
         # for at most 9 moves
         for j in range(9):
-            
-            # set vectorInput[9] to current move
-            vectorInput[9] = 1 if board.nextMove == 1 else -1
 
             # get qValues (probablities)
             qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
 
             # EXPLORE (pick random square)
-            if rd.random() < epsilon:
+            if rd.random() <= max(epsilonMin, epsilon * epsilonDecay * (i + 1)):
 
-                # loop until valid move generated (capped at 9 to avoid infinte loop edge case)
-                for _ in range(9): 
+                # loop until valid move generated (capped at 12 to avoid infinte loop edge case)
+                for _ in range(12): 
                     
                     # generate the random move
                     row, col = np.random.randint(0,3), np.random.randint(0,3)
@@ -166,35 +169,33 @@ def trainModel(version=None, iteration=None):
 
             # if there was a winner
             if result != 0:
+                
+                # reward based on result
+                target[3 * row + col] = result
 
-                # if O up next, X just went
-                if board.nextMove == 2:
-                    target[3 * row + col] = -result
-                else: 
-                    target[3 * row + col] = result
-            
             # if no next move (current game was a tie)
-            elif bestValidAction == -1:
+            elif bestValidAction(board, qValues) == -1:
 
                 # give tieReward (hyperparameter)
                 target[3 * row + col] = tieReward
 
-            # else -> calculate value of next board state
+            # else game not over -> calculate value of next board state
             else:
-                newQValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
-                target[3 * row + col] = result + discountFactor * bestValidAction(board, newQValues)
+                nextVectorInput = boardStateValue(board)
+                newQValues = model.predict(nextVectorInput.reshape(1,-1), verbose=0)[0]
+                target[3 * row + col] = result + gamma * bestValidAction(board, newQValues)
 
             # retrain model
             model.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
             
             # update board state
-            vectorInput = boardStateValue(board) 
+            vectorInput = nextVectorInput
 
             # escape to next round if there was a winner
             if result != 0:
                 break
-                
-        print("Iteration {} ended in {} moves with result {}".format(i + offset + 1, j + 1, result))
+        
+        print("\rIteration {} ended in {} moves. {}!".format(i + offset + 1, j + 1, 'X wins' if result == 1 else 'O wins' if result == -1 else "A draw"), end='')
         
         if (i + offset + 1) % saveInterval == 0:
             saveModel(model, 'joe-v{}-i{}'.format(build, (i + offset + 1)))
@@ -206,12 +207,12 @@ def trainModel(version=None, iteration=None):
 def bestValidAction(board, qValues):
 
     # sort qValues
-    qValuesSorted = np.argsort(qValues)[::-1]
+    sortedIndices = np.argsort(qValues)[::-1]
 
-    for i in range(len(qValuesSorted)):
+    for i in sortedIndices:
         
         # get row/column from qValue
-        row, col = divmod(qValuesSorted[i], 3)
+        row, col = divmod(i, 3)
 
         # if current action is valid
         if board.validMove(row, col):
@@ -239,15 +240,30 @@ def __runUserPlay(stdscr, model):
 
         while board.gameWon() == 0:
             if board.nextMove == joeTurn:  # AI's turn
+                
+                # graphics
                 time.sleep(0.2)
                 stdscr.addstr(7, 0, "Joe's Move...")
                 stdscr.refresh()
                 time.sleep(1)
                 stdscr.refresh()
+
+                # get current board State
                 vectorInput = boardStateValue(board)
-                row, col = getAction(vectorInput, board, model)
+
+                # get qValues from state
+                qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
+
+                # get best action
+                action = bestValidAction(board, qValues)
+
+                # play move
+                row, col = divmod(action, 3)
                 board.playMove(row, col)
+
+                # update screen
                 board.drawBoard(stdscr)
+
             else:  # Human's turn
                 io.getMove(stdscr, board, True)
 
@@ -284,7 +300,7 @@ def saveModel(model, name):
     """
 
     model.save("./models/{}.keras".format(name))
-    print("Model ./models/{}.keras saved.".format(name))
+    print("\nMODEL SAVED:\t./models/{}.keras\n".format(name))
 
 
 def loadModel(version, iteration):
@@ -306,7 +322,6 @@ def loadModel(version, iteration):
     else:
         print("Sorry pal, that file doesn't exist.")
         return None
-
 
 
 def deleteAllModels___RED_BUTTON():
@@ -336,16 +351,36 @@ def playModels(model1, model2):
     wins = 0
 
     for i in range(games): 
+
+        # randomly decide first move
         model1Turn = rd.randint(1,2)
+        # make new board
         board = bd.Board()
+
+        # until a winner is decided
         while board.gameWon() == 0:
+
+            # get current state
             vectorInput = boardStateValue(board)
+
+            # decide which model is next
             if board.nextMove == model1Turn:  # Model 1's turn
-                row, col = getAction(vectorInput, board, model1)
-                board.playMove(row, col)
+
+                currentModel = model1
+
             else:  # Model 2's turn
-                row, col = getAction(vectorInput, board, model2)
-                board.playMove(row, col)
+                
+                currentModel = model2
+            
+            # get qValues from state
+            qValues = currentModel.predict(vectorInput.reshape(1,-1), verbose=0)[0]
+
+            # get best action
+            action = bestValidAction(board, qValues)
+
+            # play move
+            row, col = divmod(action, 3)
+            board.playMove(row, col)
 
         # Update the win count
         if board.gameWon() == model1Turn:
@@ -357,7 +392,7 @@ def playModels(model1, model2):
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
 
-    trainModel()
+    trainModel(build, 100)
     
     '''joeRandom = loadModel('0', 0)
     a1000 = loadModel('1.0.0', 1000)
