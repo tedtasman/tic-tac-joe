@@ -5,7 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+# Unreleased
+
+## [4.0.1] - 2024/06/08
+### Model: 
+- Use 1x10 layout to include current move
+### Added:
+- Better UI when running training
+### Fixed:
+- Issues with bestValidAction returning nonsense indices
+
+## [3.0.0] - 2024/06/07 **CURRENTLY ABANDONED**
+### Model 
+- attempting backprop
+
+# Released
+
+## [2.4.2] - 2024/06/07 
+### Fixed
+- inverted rewards
+- various bugs in training code
+### Issues
+- Model seemingly learns nothing
 
 ## [2.3.0] - 2024/06/07
 ### Model:
