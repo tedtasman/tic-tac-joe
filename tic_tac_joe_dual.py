@@ -14,8 +14,9 @@ import tensorflow as tf
 import random as rd
 import time
 import curses
+import dualModel as dm
 
-build = '4.0.1'
+build = '5.0.0'
 
 # ======== HYPERPARAMETERS ===========
 
@@ -120,7 +121,7 @@ def trainModel(version=None, iteration=None):
         model = loadModel(version, iteration)
 
     else:
-        model = __buildModel()
+        dualModel = dm.DualModel()
 
     iterations = int(input("Set iterations: "))
     saveInterval = int(input("Set save interval: "))
@@ -132,12 +133,16 @@ def trainModel(version=None, iteration=None):
         board = bd.Board()
         # get vectorInput before game (all 0s)
         vectorInput = boardStateValue(board) 
+        boardStates = [(vectorInput, None)]
 
         # for at most 9 moves
         for j in range(9):
 
+
+
             # get qValues (probablities)
-            qValues = model.predict(vectorInput.reshape(1,-1), verbose=0)[0]
+            currentModel = dualModel.getCurrentModel(board)
+            qValues = currentModel.predict(vectorInput.reshape(1,-1), verbose=0)[0]
 
             # EXPLORE (pick random square)
             if rd.random() <= max(epsilonMin, epsilon * epsilonDecay * (i + 1)):
@@ -150,17 +155,22 @@ def trainModel(version=None, iteration=None):
 
                     # test validity, escape if valid
                     if board.validMove(row, col):
+                        action = 3 * row + col
                         break
             
             # EXPLOIT (use model probabilities)
             else:
                 # get best action
-                action = bestValidAction(board, qValues)
+                action = currentModel.bestValidAction(board, qValues)
                 # convert to row, col
                 row, col = divmod(action, 3)
 
             # play move
             board.playMove(row, col)
+
+            # save move for backprop
+            boardStates.append((vectorInput, action))
+
             # check for winner
             result = winnerDeter(board)
 
@@ -173,28 +183,51 @@ def trainModel(version=None, iteration=None):
                 # reward based on result
                 target[3 * row + col] = result
 
-            # if no next move (current game was a tie)
-            elif bestValidAction(board, qValues) == -1:
-
+            # if current game was a tie
+            elif board.gameWon() == 3:
                 # give tieReward (hyperparameter)
                 target[3 * row + col] = tieReward
 
-            # else game not over -> calculate value of next board state
-            else:
-                nextVectorInput = boardStateValue(board)
-                newQValues = model.predict(nextVectorInput.reshape(1,-1), verbose=0)[0]
-                target[3 * row + col] = result + gamma * bestValidAction(board, newQValues)
-
             # retrain model
-            model.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
+            currentModel.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
             
             # update board state
-            vectorInput = nextVectorInput
+            vectorInput = boardStateValue(board) 
 
             # escape to next round if there was a winner
             if result != 0:
                 break
         
+        finalModel = currentModel
+
+        if finalModel == dualModel.xModel:
+            otherModel = dualModel.oModel
+        else:
+            otherModel = dualModel.xModel
+
+        turn = 1
+        for state, action in reversed(boardStates):
+            
+
+            # if same model as final model 
+            if turn == 1:
+                currentModel = finalModel
+            else:
+                currentModel = otherModel
+    
+            # get qvalues for that state
+            qValues = currentModel.predict(state.reshape(1,-1), verbose=0)[0]
+            target = qValues[:]
+
+            # update targer of action to final result * gamma
+            target[action] = result * gamma
+            
+            # retrain currentmodel
+            currentModel.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
+        
+            result *= -gamma
+            turn *= -1
+
         print("\rIteration {} ended in {} moves. {}!".format(i + offset + 1, j + 1, 'X wins' if result == 1 else 'O wins' if result == -1 else "A draw"), end='')
         
         if (i + offset + 1) % saveInterval == 0:
@@ -202,6 +235,7 @@ def trainModel(version=None, iteration=None):
 
     return model
 
+#we need to figure out how to save the dual model
 
 # get best action (board, qValues) -> qvalue
 def bestValidAction(board, qValues):
@@ -298,10 +332,10 @@ def saveModel(model, name):
     """
     This saves a model to a desired path for later use.
     """
-
+    # figure out a way to save both models together. maybe just by name. maybe put it in the dualModel module
     model.save("./models/{}.keras".format(name))
     print("\nMODEL SAVED:\t./models/{}.keras\n".format(name))
-
+    
 
 def loadModel(version, iteration):
     """
@@ -391,7 +425,7 @@ def playModels(model1, model2):
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    
+    trainModel()
     '''joeRandom = loadModel('0', 0)
     a1000 = loadModel('1.0.0', 1000)
     b500 = loadModel('1.2.0', 500)
