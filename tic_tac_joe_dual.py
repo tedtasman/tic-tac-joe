@@ -215,7 +215,7 @@ def bestValidAction(board, qValues):
     # sort qValues
     sortedIndices = np.argsort(qValues)[::-1]
 
-    for i in sortedIndices: # Highly unlikely, but qvalues could be a problem 
+    for i in sortedIndices: 
         
         # get row/column from qValue
         row, col = divmod(i, 3)
@@ -436,7 +436,7 @@ def runAutoTest(models, games=50):
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    trainModel(build, 1000)
+    trainModel()
     '''a = dm.loadModel('v5.0.0-i1000')
     b = dm.loadModel('v5.1.0-i1000')
     c = dm.loadModel('v5.2.0-i1000')
