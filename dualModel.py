@@ -7,7 +7,7 @@ This class sets up two models, one as X and one as O. This allows the individual
 the game and seperately and not get confused when trying to figure out if it is x or y.
 
 """
-
+import os
 import numpy as np 
 import tensorflow as tf 
 import tic_tac_joe as joe
@@ -18,18 +18,17 @@ import board as bd
 alpha = joe.alpha     # learning rate
 
 
-
-
 class DualModel:
     
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.xModel = self.__buildModel()
         self.oModel = self.__buildModel()
 
 
     def __buildModel(self):
         model = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(64, activation='relu', input_shape=(10,)),  # Input layer (9 cells in Tic Tac Toe)
+            tf.keras.layers.Input(shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
             tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer
             tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 2 
@@ -69,15 +68,6 @@ class DualModel:
             # if current action is valid
             if board.validMove(row, col):
                 return i # return current qValue index
-
-            # if invalid move was attempted
-            '''else:
-                # punish that move
-                target = qValues[:]
-                target[i] = -1
-                vectorInput = joe.boardStateValue(board)
-                currentModel.fit(vectorInput.reshape(1,-1), np.array([target]), verbose=0)
-                pass'''
         
         # return -1 if no next move (game is a tie)
         return -1
@@ -91,3 +81,37 @@ class DualModel:
             currentModel = self.oModel
 
         return currentModel
+
+
+    def saveModel(self):
+        """
+        This saves a model to a desired path for later use.
+        """
+        
+        # make 
+        try:
+            os.makedirs('./dualModels/{}'.format(self.name))
+        except FileExistsError:
+            print("Hey pal, that model name is already in use...")
+            return
+        
+        self.xModel.save("./dualModels/{}/X-{}.keras".format(self.name, self.name)) # save X model
+        self.xModel.save("./dualModels/{}/O-{}.keras".format(self.name, self.name)) # save O model
+
+        print("\nMODEL SAVED:\t./dualModels/{}/\n".format(self.name))
+
+ 
+
+def loadModel(name):
+    """
+    This loads a model from a desired path for later use.
+    """
+    xModel = tf.keras.models.load_model("./dualModels/{}/X-{}.keras".format(name, name))
+    oModel = tf.keras.models.load_model("./dualModels/{}/O-{}.keras".format(name, name))
+    print("\nMODEL LOADED:\t.dualModels/{}/\n".format(name))
+
+    dualModel = DualModel(name)
+    dualModel.xModel = xModel
+    dualModel.oModel = oModel
+
+    return dualModel

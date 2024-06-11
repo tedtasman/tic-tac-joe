@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Unreleased
 
+## [5.3.0] - 2024/06/10
+### Hyperparameters tweaks:
+- tieReward = 0
+
+## [5.2.0] - 2024/06/10
+### Hyperparameters tweaks:
+- gamma = 0.99
+
+## [5.1.0] - 2024/06/10
+### Hyperparameters tweaks:
+- alpha = 0.1
+
+## [5.0.0] - 2024/06/10
+### Model:
+- Switch to dual model architecture
+    - each dualModel object contains a model for play as X and a model for playing as O
+    - allows specialization in strategy
+    - eliminates any chance of convolution from one model playing both sides
+### 5.0.0 Base Hyperparameters:
+- alpha = 0.01
+- gamma = 0.9
+- tieReward = 0.2
+
 ## [4.0.1] - 2024/06/08
 ### Model: 
 - Use 1x10 layout to include current move
