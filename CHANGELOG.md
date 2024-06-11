@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.3.0] - 2024/06/10
 ### Hyperparameters tweaks:
 - tieReward = 0
+- 2 hidden layers
+    - dimensionality 32
+- no dropouts
+
+## [5.3.0] - 2024/06/10
+### Hyperparameters tweaks:
+- tieReward = 0
 
 ## [5.2.0] - 2024/06/10
 ### Hyperparameters tweaks:

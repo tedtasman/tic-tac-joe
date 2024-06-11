@@ -16,7 +16,7 @@ import time
 import curses
 import dualModel as dm
 
-build = '5.3.0'
+build = '5.4.0'
 
 # ======== HYPERPARAMETERS ===========
 
@@ -436,8 +436,12 @@ def runAutoTest(models, games=50):
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    trainModel(build, 1000)
-    '''a = dm.loadModel('v5.0.0-i1000')
-    b = dm.loadModel('v5.1.0-i1000')
-    c = dm.loadModel('v5.2.0-i1000')
-    d = dm.loadModel('v5.3.0-i1000')'''
+    '''a = dm.loadModel('v5.0.0-i30000')
+    b = dm.loadModel('v5.0.1-i30000')
+    c = dm.loadModel('v5.0.2-i30000')
+    d = dm.loadModel('v5.0.3-i30000')
+    e = dm.loadModel('v5.1.0-i30000')
+    f = dm.loadModel('v5.2.0-i30000')
+    g = dm.loadModel('v5.3.0-i30000')
+    runAutoTest([a, b, c, d, e, f, g], games=100)'''
+    trainModel()

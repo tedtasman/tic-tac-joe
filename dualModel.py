@@ -29,12 +29,8 @@ class DualModel:
     def __buildModel(self):
         model = tf.keras.models.Sequential([
             tf.keras.layers.Input(shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
-            tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer
-            tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 2 
-            tf.keras.layers.Dropout(0.5),
-            tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 3
-            tf.keras.layers.Dropout(0.5),
+            tf.keras.layers.Dense(32, activation='relu'),  # Hidden layer
+            tf.keras.layers.Dense(32, activation='relu'),  # Hidden layer 2 
             tf.keras.layers.Dense(9, activation='softmax')  # Output layer (9 possible actions)
         ])
 
