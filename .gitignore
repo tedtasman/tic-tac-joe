@@ -4,3 +4,6 @@ wsp-joe.code-workspace
 .venv
 .mypy_cache
 test.py
+models/
+autoTest.py
+tic_tac_joe.py

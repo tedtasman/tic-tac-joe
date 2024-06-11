@@ -19,6 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Hyperparameters tweaks:
 - alpha = 0.1
 
+## [5.0.3] - 2024/06/10
+### Hyperparameters tweaks:
+- gamma = 0.93
+
+## [5.0.2] - 2024/06/10
+### Hyperparameters tweaks:
+- alpha = 0.3
+
+## [5.0.1] - 2024/06/10
+### Hyperparameters tweaks:
+- tieReward = 0.1
+
 ## [5.0.0] - 2024/06/10
 ### Model:
 - Switch to dual model architecture

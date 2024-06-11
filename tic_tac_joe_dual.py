@@ -78,6 +78,7 @@ def trainModel(version=None, iteration=None):
     offset = 0
     if version and iteration:
         dualModel = dm.loadModel('v{}-i{}'.format(version, iteration))
+        offset = iteration
 
     else:
         dualModel = dm.DualModel('joe')
@@ -325,9 +326,8 @@ def deleteAllModels___RED_BUTTON():
 
 
 # plays two models against each other
-def playModels(dualModel1, dualModel2, verbose=False):
+def playModels(dualModel1, dualModel2, verbose=False, games=None):
 
-    games = 0
     # repeat until valid answer
     while not isinstance(games, int) or int(games) < 1:
         games = int(input("\nHow many games to play? "))
@@ -388,13 +388,56 @@ def playModels(dualModel1, dualModel2, verbose=False):
         print("\033[K{} STATS: \t W-L-T: {}-{}-{} \t Games Played: {} \t Win/Loss: {:0.3f}".format(dualModel1.name, wins, (i - wins - ties + 1), ties, (i + 1), (wins + 0.5 * ties) / (i + 1)), end='\r')
 
     print('\n')
+    return (wins + 0.5 * ties) / (i + 1)
+
+
+def runAutoTest(models, games=50):
+    """
+    This is the function that runs the autotester. It will run the playModels function on all the models in the models directory.
+    """
+
+    modelStats = {}
+
+    # iterate through models
+    for model1 in models:
+        for model2 in models:
+
+            # if different models
+            if model1 != model2:
+
+                model1Name = model1.name
+                model2Name = model2.name
+
+                # if model1 not in stats
+                if model1Name not in modelStats:
+
+                    # add model1 to stats
+                    modelStats[model1Name] = {}
+
+                if model2Name not in modelStats:
+                        
+                    # add model2 to stats
+                    modelStats[model2Name] = {}
+
+                # if model1 vs model 2 not run yet
+                if model2Name not in modelStats[model1Name]:
+                        
+                        # run models
+                        print ("{} vs {}".format(model1Name, model2Name))
+                        modelStats[model1Name][model2Name] = playModels(model1, model2, games=games)
+                        modelStats[model2Name][model1Name] = 1 - modelStats[model1Name][model2Name]
+
+    for model1 in modelStats:
+        print(model1, 'vs:')
+        for model2 in modelStats[model1]:
+            print("\t{}: {:0.3f}".format(model2, modelStats[model1][model2]))
+
 
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    trainModel()
-    '''    i50 = dm.loadModel('v5.0.0-i50')
-    i100 = dm.loadModel('v5.0.0-i100')
-    i250 = dm.loadModel('v5.0.0-i250')
-    i500 = dm.loadModel('v5.0.0-i500')
-    i1000 = dm.loadModel('v5.0.0-i1000')'''
+    trainModel(build, 1000)
+    '''a = dm.loadModel('v5.0.0-i1000')
+    b = dm.loadModel('v5.1.0-i1000')
+    c = dm.loadModel('v5.2.0-i1000')
+    d = dm.loadModel('v5.3.0-i1000')'''
