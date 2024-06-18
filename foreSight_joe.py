@@ -17,7 +17,7 @@ import ioBoard as io
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-BUILD = '6.0.0'
+BUILD = '6.1.0'
 
 
 
@@ -228,7 +228,7 @@ def exploit(vectorInput, currentModel, board, blunderPenalty, tieReward):
     board.playMove(*divmod(action, 3))
 
     # return adjusted qValues
-    return qValues
+    return qValues, action
 
 
 
@@ -292,12 +292,31 @@ def explore(vectorInput, currentModel, board, tieReward, random=False):
     
     # return tuple with smart if random is set to True
     if random:
-        return smart, qValues
+        return smart, qValues, action
     
     # return adjusted qValues
     else:
-        return qValues
+        return qValues, action
 
+
+'''
+propogates the result back through the model
+
+returns nothing
+'''
+def backpropagate(boardStates, model, result, gamma):
+
+    for state, action in reversed(boardStates):
+
+        # get qValues for that state
+        qValues = model.predict(state.reshape(1,-1), verbose=0)[0]
+        target = qValues.copy()
+
+        # update target of action to final result * gamma
+        target[action] = result * gamma
+
+        # refit model
+        model.fit(state.reshape(1,-1), target.reshape(1,-1), verbose=0)
 
 
 '''
@@ -341,6 +360,7 @@ def trainModel(override = False):
     ties = 0
     winPercentage = 0
     winPercentages = []
+    averageMoves = 0
 
     # run training
     for i in range(iterations):
@@ -350,6 +370,9 @@ def trainModel(override = False):
 
         # get vector representation of empty board
         vectorInput = np.zeros(9)
+
+        # list to store states and actions for backpropagation
+        boardStates = [(vectorInput, None)]
 
         # model goes first on even iterations and second on odd iterations
         if i % 2 == 0:
@@ -369,19 +392,22 @@ def trainModel(override = False):
                 if rd.random() <= max(epsilonMin, epsilon * (epsilonDecay ** i)):
 
                     # call explore function, plays move and returns targetQValues
-                    targetQValues = explore(vectorInput, model, board, tieReward)
+                    targetQValues, action = explore(vectorInput, model, board, tieReward)
                 
                 # EXPLOIT (use model probabilities)
                 else:
 
                     # call exploit function, returns targetQValues
-                    targetQValues = exploit(vectorInput, model, board, blunderPenalty, tieReward)                
+                    targetQValues, action = exploit(vectorInput, model, board, blunderPenalty, tieReward)    
+
+                    # record state and action for backpropagation
+                    boardStates.append((vectorInput, action))            
             
             # if not model's turn
             else:
 
                 # call explore function for a random move, plays move and returns targetQValues
-                smart, targetQValues = explore(vectorInput, model, board, tieReward, True)
+                smart, targetQValues, action = explore(vectorInput, model, board, tieReward, True)
 
             # only refit for smart moves, not random
             if smart:
@@ -410,10 +436,24 @@ def trainModel(override = False):
 
                 vectorInput = board.vector
 
+        # backpropagate result
+        # if model wins -> reward
+        if winner == modelTurn:
+            backpropagate(boardStates, model, 1, gamma)
+
+        # if model loses -> punish
+        elif winner == -modelTurn:
+            backpropagate(boardStates, model, -1, gamma)
+
+        # if tie -> tie reward
+        else:
+            backpropagate(boardStates, model, tieReward, gamma)
+
         # record progress
+        averageMoves = (averageMoves * i + j) / (i + 1)
         winPercentage = (wins + 0.5 * ties) / (i + 1)
         winPercentages.append(winPercentage)
-        print(f"\033[1K\r\033[0KAfter {i + 1} iterations: \t W-L-T: {wins}-{losses}-{ties} \t Win/Loss: {(wins + 0.5 * ties) / (i + 1):.3f} \t Accounting for: {(wins + losses + ties) / (i + 1)}", end='')
+        print(f"\033[1K\r\033[0KAfter {i + 1} iterations: \t W-L-T: {wins}-{losses}-{ties} \t Win/Loss: {(wins + 0.5 * ties) / (i + 1):.3f} \t Average Moves: {averageMoves:.1f}", end='')
 
         if (i + 1) % saveInterval == 0:
             print('\n')
@@ -430,7 +470,6 @@ def trainModel(override = False):
     plt.show()
 
     return model
-
 
 
 # runs AI vs user game in curses wrapper
