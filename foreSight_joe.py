@@ -17,7 +17,7 @@ import ioBoard as io
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-BUILD = '6.1.0'
+BUILD = '6.1.1'
 
 
 
@@ -324,7 +324,7 @@ train the model using the hyperparameters defined above or custom hyperparameter
 
 returns dualModel object
 '''
-def trainModel(override = False):
+def trainModel(override = False, backprop = True):
 
     # if override, get custom hyperparameters
     if override:
@@ -370,9 +370,10 @@ def trainModel(override = False):
 
         # get vector representation of empty board
         vectorInput = np.zeros(9)
-
-        # list to store states and actions for backpropagation
-        boardStates = [(vectorInput, None)]
+        
+        if backprop:
+            # list to store states and actions for backpropagation
+            boardStates = [(vectorInput, None)]
 
         # model goes first on even iterations and second on odd iterations
         if i % 2 == 0:
@@ -400,8 +401,9 @@ def trainModel(override = False):
                     # call exploit function, returns targetQValues
                     targetQValues, action = exploit(vectorInput, model, board, blunderPenalty, tieReward)    
 
-                    # record state and action for backpropagation
-                    boardStates.append((vectorInput, action))            
+                    if backprop:
+                        # record state and action for backpropagation
+                        boardStates.append((vectorInput, action))            
             
             # if not model's turn
             else:
@@ -437,17 +439,18 @@ def trainModel(override = False):
                 vectorInput = board.vector
 
         # backpropagate result
-        # if model wins -> reward
-        if winner == modelTurn:
-            backpropagate(boardStates, model, 1, gamma)
+        if backprop:
+            # if model wins -> reward
+            if winner == modelTurn:
+                backpropagate(boardStates, model, 1, gamma)
 
-        # if model loses -> punish
-        elif winner == -modelTurn:
-            backpropagate(boardStates, model, -1, gamma)
+            # if model loses -> punish
+            elif winner == -modelTurn:
+                backpropagate(boardStates, model, -1, gamma)
 
-        # if tie -> tie reward
-        else:
-            backpropagate(boardStates, model, tieReward, gamma)
+            # if tie -> tie reward
+            else:
+                backpropagate(boardStates, model, tieReward, gamma)
 
         # record progress
         averageMoves = (averageMoves * i + j) / (i + 1)
