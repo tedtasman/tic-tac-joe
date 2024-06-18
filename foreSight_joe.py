@@ -322,6 +322,8 @@ def backpropagate(boardStates, model, result, gamma):
 '''
 train the model using the hyperparameters defined above or custom hyperparameters if override is set to True.
 
+input (optional): override (bool) - if True, use custom hyperparameters - default is False
+input (optional): backprop (bool) - if True, backpropagate results - default is True
 returns dualModel object
 '''
 def trainModel(override = False, backprop = True):
