@@ -11,7 +11,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # only show tensorflow errors
 import time
 import numpy as np
-import boardReshape as bd
+import board as bd
 import random as rd
 import ioBoard as io
 import tensorflow as tf

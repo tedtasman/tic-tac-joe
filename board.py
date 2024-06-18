@@ -10,10 +10,11 @@ Godspeed.
 """
 
 import curses
+import numpy as np
 
 
 X = 1
-O = 2
+O = -1
 
 class Board:
 
@@ -32,15 +33,32 @@ class Board:
             self.nextMove = X
 
 
-    # returns token corresponding to value (1 -> X, 2 -> O, ? -> -)
+    # returns token corresponding to value (1 -> X, -1 -> O, ? -> -)
     def decodeMove(self, move):
 
         if move == 1:
             return 'X'
-        elif move == 2:
+        elif move == -1:
             return 'O'
         else:
             return ' '
+
+
+    # get 1x9 vector representation of board
+    @property
+    def vector(self):
+    
+        vectorInput = np.zeros(9) #returns array of given shape (9) and its filled with zeroes
+
+        # iterate through rows & cols of board
+        for row in range(3):
+
+            for col in range(3):
+                
+                vectorInput[row * 3 + col] = self.grid[row][col] # update vector with current grid value
+
+        return vectorInput
+
 
     def validMove(self, row, col):
 
@@ -61,6 +79,8 @@ class Board:
         if self.validMove(row, col):
             self.grid[row][col] = self.nextMove # update grid
             self.__flipTurn() # flip turn
+        else:
+            print('Invalid move, try again.')
             
 
 
@@ -69,7 +89,7 @@ class Board:
 
         #Check for row winner
         for row in self.grid:
-            if (all(x == row[0] for x in row) and row[0] != 0) or (all(O == row[0] for O in row) and row[0] != 0) :
+            if (all(x == row[0] for x in row) and row[0] != 0) :
                 return row[0]
             
         #Check for column winner 
@@ -85,7 +105,7 @@ class Board:
         
         #Check for tie?
         elif all(all(x != 0 for x in row) for row in self.grid):
-            return 3
+            return 2
         # if 3 in a row return winner, else None?
 
         else: #if no winner and game not over
@@ -126,6 +146,7 @@ class Board:
         
         stdscr.refresh()
 
+
     
     def __str__(self):
         out = '\n'
@@ -136,3 +157,5 @@ class Board:
         return out
     
     __repr__ = __str__
+
+
