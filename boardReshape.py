@@ -79,6 +79,8 @@ class Board:
         if self.validMove(row, col):
             self.grid[row][col] = self.nextMove # update grid
             self.__flipTurn() # flip turn
+        else:
+            print('Invalid move, try again.')
             
 
 
@@ -103,7 +105,7 @@ class Board:
         
         #Check for tie?
         elif all(all(x != 0 for x in row) for row in self.grid):
-            return 3
+            return 2
         # if 3 in a row return winner, else None?
 
         else: #if no winner and game not over

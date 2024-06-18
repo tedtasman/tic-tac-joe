@@ -10,20 +10,21 @@ the game and seperately and not get confused when trying to figure out if it is 
 import os
 import numpy as np 
 import tensorflow as tf 
-import tic_tac_joe as joe
-import board as bd
+import foreSight_joe as joe
 
 # ======== HYPERPARAMETERS ===========
 
-alpha = joe.alpha     # learning rate
+ALPHA = joe.ALPHA     # learning rate
 
 
 class DualModel:
     
-    def __init__(self, name):
+    def __init__(self, name, alpha=ALPHA):
         self.name = name
+        self.alpha = alpha
         self.xModel = self.__buildModel()
         self.oModel = self.__buildModel()
+
 
 
     def __buildModel(self):
@@ -38,18 +39,21 @@ class DualModel:
             tf.keras.layers.Dense(9, activation='softmax')  # Output layer (9 possible actions)
         ])
 
-        model.compile(optimizer=tf.keras.optimizers.Adam(alpha), loss='categorical_crossentropy')
+        model.compile(optimizer=tf.keras.optimizers.Adam(self.alpha), loss='categorical_crossentropy')
 
         return model
 
 
-    def bestValidAction(self, board, qValues):
+    def bestValidAction(self, board):
     
         # determine whose move it is
         currentModel = self.getCurrentModel(board) 
         
         # get qValues based on current turn
-        vectorInput = joe.boardStateValue(board)
+        vectorInput = board.vector
+
+        # get qValues from model
+        qValues = currentModel.predict(vectorInput.reshape(1,-1), verbose=0)[0]
 
         #get valid indices
         validIndices =  [i for i in range(9) if board.validMove(*divmod(i, 3))]
@@ -83,32 +87,32 @@ class DualModel:
         return currentModel
 
 
-    def saveModel(self):
+    def saveModel(self, build):
         """
         This saves a model to a desired path for later use.
         """
         
         # make 
         try:
-            os.makedirs('./dualModels/{}'.format(self.name))
+            os.makedirs(f'./{build}/{self.name}')
         except FileExistsError:
             print("Hey pal, that model name is already in use...")
             return
         
-        self.xModel.save("./dualModels/{}/X-{}.keras".format(self.name, self.name)) # save X model
-        self.xModel.save("./dualModels/{}/O-{}.keras".format(self.name, self.name)) # save O model
+        self.xModel.save(f"./{build}/{self.name}/X_{self.name}.keras") # save X model
+        self.xModel.save(f"./{build}/{self.name}/O_{self.name}.keras") # save O model
 
         print("\nMODEL SAVED:\t./dualModels/{}/\n".format(self.name))
 
- 
+    
 
-def loadModel(name):
+def loadModel(build, name):
     """
     This loads a model from a desired path for later use.
     """
-    xModel = tf.keras.models.load_model("./dualModels/{}/X-{}.keras".format(name, name))
-    oModel = tf.keras.models.load_model("./dualModels/{}/O-{}.keras".format(name, name))
-    print("\nMODEL LOADED:\t.dualModels/{}/\n".format(name))
+    xModel = tf.keras.models.load_model(f"./{build}/{name}/X_{name}.keras") # load X model
+    oModel = tf.keras.models.load_model(f"./{build}/{name}/O_{name}.keras") # load O model
+    print(f"\nMODEL LOADED:\t./{build}/{name}/\n")
 
     dualModel = DualModel(name)
     dualModel.xModel = xModel
