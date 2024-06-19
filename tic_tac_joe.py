@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 os.system('cls' if os.name == 'nt' else 'clear')
 print("\033[1K\r\033[0KImports loaded!")
 
-BUILD = '6.3.3' # increase epsilon decay
+BUILD = '6.4.3'
 
 
 
@@ -38,7 +38,7 @@ ALPHA = 0.01     # learning rate
 GAMMA = 0.9     # discount factor
 
 EPSILON = 1.0   # exploration rate
-EPSILON_DECAY = 0.9997 # decay rate for epsilon
+EPSILON_DECAY = 0.995 # decay rate for epsilon
 EPSILON_MIN = 0.1 # minimum epsilon
 
 TIE_REWARD = 0.5  # reward for tie
@@ -58,12 +58,8 @@ returns model object
 def __buildModel(alpha):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Input(shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
-        tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 2 
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 3
-        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
+        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
         tf.keras.layers.Dense(9, activation='tanh')  # Output layer (9 possible actions)
     ])
 
@@ -402,8 +398,19 @@ def trainModel(load=False, override=False, backprop=True):
     iterations = int(input("Set iterations: "))
     saveInterval = int(input("Set save interval: "))
     os.system('cls' if os.name == 'nt' else 'clear')
-    print("\033[92m" + f'Running {iterations} iterations with save interval {saveInterval}... ' + "\033[0m" + '(ctrl + C to exit)')
-    print('\n====================================================\n')
+    print('\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    print('[' + '\t'*12 + ']')
+    print("]   \033[1m" + f'Running {iterations} iterations with save interval {saveInterval}... ' + "\033[0m" + '(ctrl + C to exit)'+ '\t'*3 + '[')
+    print('[' + '\t'*12 + ']')
+    print(f']   \033[3m\033[1mModel: {BUILD}\033[0m' + '\t'*10 + '[')
+    print(f'[   \033[34mAlpha: {alpha}\033[0m' + '\t'*11 + ']')
+    print(f']   \033[35mGamma: {gamma}\033[0m' + '\t'*11 + '[')
+    print(f'[   \033[32mEpsilon: {epsilon} * {epsilonDecay} -> {epsilonMin}\033[0m' + '\t'*9 + ']')
+    print(f']   \033[96mTie Reward: {tieReward}\033[0m' + '\t'*10 + '[')
+    print(f'[   \033[31mBlunder Penalty: {blunderPenalty}\033[0m' + '\t'*10 + ']')
+    print(f']   \033[93mBlock Reward: {blockReward}\033[0m' + '\t'*10 + '[')
+    print('[' + '\t'*12 + ']')
+    print('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n')
 
     wins = 0
     losses = 0
