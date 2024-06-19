@@ -17,7 +17,7 @@ import ioBoard as io
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-BUILD = '6.1.1'
+BUILD = '6.3.0'
 
 
 
@@ -32,6 +32,8 @@ EPSILON_MIN = 0.1 # minimum epsilon
 
 TIE_REWARD = 0.5  # reward for tie
 BLUNDER_PENALTY = -1 # penalty for blunder (missed win or unforced loss)
+INVALID_PENALTY = 0 # penalty for invalid move
+SCORE_MULTIPLIER = 1 # multiplier for score
 
 
 
@@ -51,10 +53,10 @@ def __buildModel(alpha):
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(64, activation='relu'),  # Hidden layer 3
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(9, activation='softmax')  # Output layer (9 possible actions)
+        tf.keras.layers.Dense(9, activation='tanh')  # Output layer (9 possible actions)
     ])
 
-    model.compile(optimizer=tf.keras.optimizers.Adam(alpha), loss='categorical_crossentropy')
+    model.compile(optimizer=tf.keras.optimizers.Adam(alpha), loss='mse')
 
     return model
 
@@ -84,7 +86,17 @@ Loads the model with the given build, alpha, gamma, and iteration
 
 returns model object
 '''
-def loadModel(build, alpha, gamma, iteration):
+def loadModel(build=None, alpha=None, gamma=None, iteration=None):
+
+    # if not given, get from user
+    if not (build and alpha and gamma and iteration):
+        build = input("Enter build: ")
+        alpha = float(input("Enter alpha (0.1 - 0.01): "))
+        gamma = float(input("Enter gamma (0.9 - 0.99): "))
+        iteration = int(input("Enter iteration: "))
+
+    print(f"MODEL LOADED: a{alpha}_g{gamma}_i{iteration}.keras in {build} directory.")
+
     return tf.keras.models.load_model(f"./{build}/a{alpha}_g{gamma}_i{iteration}.keras")
 
 
@@ -152,10 +164,10 @@ def vectorWin(vector):
                 return -1
     
         # check diagonals
-        if sum(vector[0::4]) == 3 or sum(vector[2:7:2]) == 3:
+        if sum(vector[0:9:4]) == 3 or sum(vector[2:7:2]) == 3:
             return 1
     
-        elif sum(vector[0::4]) == -3 or sum(vector[2:7:2]) == -3:
+        elif sum(vector[0:9:4]) == -3 or sum(vector[2:7:2]) == -3:
             return -1
 
         # if all spaces filled (tie)
@@ -169,9 +181,9 @@ def vectorWin(vector):
 '''
 Gets best moves for exploitation, sets blunder penalty for missed wins and unforced losses
 
-returns target qValues
+returns tuple: (target qValues, action)
 '''
-def exploit(vectorInput, currentModel, board, blunderPenalty, tieReward):
+def exploit(vectorInput, currentModel, board, blunderPenalty=0, tieReward=0):
 
     # get qValues based on current turn
     qValues = currentModel.predict(vectorInput.reshape(1,-1), verbose=0)[0]
@@ -217,12 +229,14 @@ def exploit(vectorInput, currentModel, board, blunderPenalty, tieReward):
                     break
     
     # set all invalid moves to negative infinity
-    for i in range(9):
+    '''for i in range(9):
         if i not in validActions:
-            qValues[i] = float('-inf')
+            qValues[i] = INVALID_PENALTY'''
 
-    # get best action
-    action = np.argmax(qValues)
+    # get best valid action
+    for action in np.argsort(qValues)[::-1]:
+        if board.validMove(*divmod(action, 3)):
+            break
 
     # play move
     board.playMove(*divmod(action, 3))
@@ -236,7 +250,8 @@ def exploit(vectorInput, currentModel, board, blunderPenalty, tieReward):
 Checks for a win or tie available. If none, plays a random move.
 If win, sets qValue of action to 1. If tie, sets qValue of action to tie reward.
 
-returns targetQValues
+If random is set to True, returns tuple with smart, qValues, and action. Otherwise,
+
 '''
 def explore(vectorInput, currentModel, board, tieReward, random=False):
     
@@ -246,9 +261,11 @@ def explore(vectorInput, currentModel, board, tieReward, random=False):
     # get valid indices
     validActions =  [i for i in range(9) if board.validMove(*divmod(i, 3))]
 
-
     # set smart to False to indicate random move
     smart = False
+
+    # initailize smart action to None
+    smartAction = None
 
     # loop through best actions to check for win or tie
     for action in validActions:
@@ -262,33 +279,35 @@ def explore(vectorInput, currentModel, board, tieReward, random=False):
 
             qValues[action] = 1
             smart = True # set smart to True to indicate a smart move can be made
+            smartAction = action # set smart action to current action
 
         # if current agent ties with this move
         elif vectorWin(futureVector) == 2:
 
             qValues[action] = tieReward
-            smart = True # set smart to True to indicate a smart move can be made
 
-    # set all invalid moves to negative infinity
+            # if no winning move, set smart action to current action
+            if not smartAction:
+                smart = True # set smart to True to indicate a smart move can be made
+                smartAction = action # set smart action to current action
+
+    '''# set all invalid moves to negative infinity
     for i in range(9):
         if i not in validActions:
-            qValues[i] = float('-inf')
+            qValues[i] = INVALID_PENALTY'''
 
     # if there is a smart move
     if smart:
-        # get best action - will be the smart move
-        action = np.argmax(qValues)
-        row, col = divmod(action, 3)
+        action = smartAction
     
     # if no smart move
     else:
 
         # get random valid action
         action = rd.choice(validActions)
-        row, col = divmod(action, 3)
 
     # play move
-    board.playMove(row, col)
+    board.playMove(*divmod(action, 3))
     
     # return tuple with smart if random is set to True
     if random:
@@ -326,7 +345,16 @@ input (optional): override (bool) - if True, use custom hyperparameters - defaul
 input (optional): backprop (bool) - if True, backpropagate results - default is True
 returns dualModel object
 '''
-def trainModel(override = False, backprop = True):
+def trainModel(load=False, override=False, backprop=True):
+
+    # if load, get model details to load
+    if load:
+        modelBuild = input("Enter build: ")
+        modelAlpha = float(input("Enter alpha (0.1 - 0.01): "))
+        modelGamma = float(input("Enter gamma (0.9 - 0.99): "))
+        modelIteration = int(input("Enter iteration: "))
+        model = loadModel(modelBuild, modelAlpha, modelGamma, modelIteration)
+        offset = modelIteration
 
     # if override, get custom hyperparameters
     if override:
@@ -348,14 +376,16 @@ def trainModel(override = False, backprop = True):
         tieReward = TIE_REWARD
         blunderPenalty = BLUNDER_PENALTY
 
+    # build model
+    if not load:
+        model = __buildModel(alpha)
+        offset = 0
+
     # define training
     iterations = int(input("Set iterations: "))
     saveInterval = int(input("Set save interval: "))
     print('\n====================================================\n')
     print('Running {} iterations with save interval {}... (ctrl + C to exit)\n'.format(iterations, saveInterval))
-
-    # get model
-    model = __buildModel(alpha)
 
     wins = 0
     losses = 0
@@ -365,7 +395,7 @@ def trainModel(override = False, backprop = True):
     averageMoves = 0
 
     # run training
-    for i in range(iterations):
+    for i in range(iterations - offset):
             
         # create new board
         board = bd.Board()
@@ -458,11 +488,14 @@ def trainModel(override = False, backprop = True):
         averageMoves = (averageMoves * i + j) / (i + 1)
         winPercentage = (wins + 0.5 * ties) / (i + 1)
         winPercentages.append(winPercentage)
-        print(f"\033[1K\r\033[0KAfter {i + 1} iterations: \t W-L-T: {wins}-{losses}-{ties} \t Win/Loss: {(wins + 0.5 * ties) / (i + 1):.3f} \t Average Moves: {averageMoves:.1f}", end='')
+        print(f"\033[1K\r\033[0KAfter {i + offset + 1} iterations: \t W-L-T: {wins}-{losses}-{ties} \t Win/Loss: {(wins + 0.5 * ties) / (i + 1):.3f} \t Average Moves: {averageMoves:.1f}", end='')
 
         if (i + 1) % saveInterval == 0:
+            if not backprop:
+                print('\n')
+                saveModel(model, BUILD + 'nb', alpha, gamma, i + offset + 1)
             print('\n')
-            saveModel(model, BUILD, alpha, gamma, i + 1)
+            saveModel(model, BUILD, alpha, gamma, i + offset + 1)
             print('\n')
 
     print('\n\nTraining complete!\n')
@@ -477,20 +510,15 @@ def trainModel(override = False, backprop = True):
     return model
 
 
-# runs AI vs user game in curses wrapper
-def __runUserPlay(stdscr, dualModel):
-
-    """
-    This is a function that allows the user to play against the model that has been trained.
-    Very straight forward.
-    """
+'''runs AI vs user game in curses wrapper'''
+def __runUserPlay(stdscr, model):
     
     play = 'foo'
     
     while True:  # Play games until the user decides to quit
 
         board = bd.Board()
-        joeTurn = rd.randint(-1,1)
+        joeTurn = rd.choice([-1, 1])
         curses.curs_set(0) # hide the cursor
         board.drawBoard(stdscr)
 
@@ -505,7 +533,10 @@ def __runUserPlay(stdscr, dualModel):
                 stdscr.refresh()
 
                 # get best action
-                action = dualModel.bestValidAction(board)
+                qValues = model.predict(board.vector.reshape(1,-1), verbose=0)[0]
+                for action in np.argsort(qValues)[::-1]:
+                    if board.validMove(*divmod(action, 3)):
+                        break
 
                 # play move
                 row, col = divmod(action, 3)
@@ -520,7 +551,7 @@ def __runUserPlay(stdscr, dualModel):
         # Print the result of the game
         if board.gameWon() == joeTurn:
             stdscr.addstr(7, 0, "Joe wins!")
-        elif board.gameWon() == 3:
+        elif board.gameWon() == 2:
             stdscr.addstr(7, 0, "It's a draw!")
         else:
             stdscr.addstr(7, 0, "You win!")
@@ -540,80 +571,16 @@ def __runUserPlay(stdscr, dualModel):
 
 
 
-# launches the user play function in curses wrapper
+'''launches the user play function in curses wrapper'''
 def playUser(model):
     curses.wrapper(__runUserPlay, model)
 
 
 
-# plays two models against each other
-def playModels(dualModel1, dualModel2, verbose=False, games=None):
-
-    # repeat until valid answer
-    while not isinstance(games, int) or int(games) < 1:
-        games = int(input("\nHow many games to play? "))
-            
-    wins = 0
-    ties = 0
-
-    for i in range(games): 
-
-        # randomly decide first move
-        model1Turn = rd.randint(1,2)
-        # make new board
-        board = bd.Board()
-
-        if model1Turn == 1:
-            model1 = dualModel1.xModel
-            model2 = dualModel2.oModel
-        else:
-            model1 = dualModel1.oModel
-            model2 = dualModel2.xModel
-
-        # until a winner is decided
-        while board.gameWon() == 0:
-
-            # get current state
-            vectorInput = board.vector
-
-            # decide which model is next
-            if board.nextMove == model1Turn:  # Model 1's turn
-
-                currentModel = model1
-
-            else:  # Model 2's turn
-                
-                currentModel = model2
-            
-            # get qValues from state
-            qValues = currentModel.predict(vectorInput.reshape(1,-1), verbose=0)[0]
-
-            # get best action
-            action = bestValidAction(board, qValues)
-
-            # play move
-            row, col = divmod(action, 3)
-            board.playMove(row, col)
-
-        if verbose:
-            print(board)
-
-        # Update the win count
-        winner = board.gameWon()
-        if winner == model1Turn:
-            wins += 1
-        elif winner == 3:
-            ties += 1
-        
-
-        print("\033[2K\r{} STATS: \t W-L-T: {}-{}-{} \t Games Played: {} \t Win/Loss: {:0.3f}".format(dualModel1.name, wins, (i - wins - ties + 1), ties, (i + 1), (wins + 0.5 * ties) / (i + 1)), end='')
-
-    print('\n')
-    return (wins + 0.5 * ties) / (i + 1) 
-
-
-
-
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
+    '''m1 = loadModel('6.0.0', 0.01, 0.9, 15000)
+    m2 = loadModel('6.1.0', 0.01, 0.9, 2500)
+    m3 = loadModel('6.1.1', 0.01, 0.99, 10000)
+    playUser(m3)'''
     trainModel()
