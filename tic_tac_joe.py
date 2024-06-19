@@ -17,7 +17,7 @@ import ioBoard as io
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-BUILD = '6.3.0'
+BUILD = '6.3.1'
 
 
 
@@ -336,6 +336,9 @@ def backpropagate(boardStates, model, result, gamma):
 
         # refit model
         model.fit(state.reshape(1,-1), target.reshape(1,-1), verbose=0)
+
+        # decrease result by gamma
+        result *= gamma
 
 
 '''
