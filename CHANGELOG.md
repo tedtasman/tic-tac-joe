@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Version 6
 
+## [6.3.0] - 2024/06/18     FUNCTIONAL TRAINING
+### Fixed:
+- Minor issues preventing successful training
+- switch to tanh activation to better fit the tic-tac-toe problem
+
 ## [6.1.0] - 2024/06/17
 ### Added:
 - ability for model to consider future moves, and modify qValues based on their outcomes

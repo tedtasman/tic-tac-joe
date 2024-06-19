@@ -498,14 +498,14 @@ def trainModel(load=False, override=False, backprop=True):
             saveModel(model, BUILD, alpha, gamma, i + offset + 1)
             print('\n')
 
-    print('\n\nTraining complete!\n')
+            # plot win percentage over time
+            plt.plot(winPercentages)
+            plt.title('Win Percentage Over Time')
+            plt.xlabel('Iteration')
+            plt.ylabel('Win Percentage')
+            plt.show()
 
-    # plot win percentage over time
-    plt.plot(winPercentages)
-    plt.title('Win Percentage Over Time')
-    plt.xlabel('Iteration')
-    plt.ylabel('Win Percentage')
-    plt.show()
+    print('\n\nTraining complete!\n')
 
     return model
 
