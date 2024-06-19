@@ -7,17 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # Version 6
 
+## [6.4.5] - 2024/06/19
+### Changed:
+- 9x10x9 model architecture 
+
+## [6.4.4] - 2024/06/19
+### Changed:
+- 9x5x5x9 model architecture 
+
 ## [6.4.3] - 2024/06/19
 ### Changed:
 - 9x8x8x9 model architecture 
 
 ## [6.4.2] - 2024/06/19
 ### Changed:
-- 9x5x5x5x9 model architecture 
+- 9x5x5x5x9 model architecture **OVERFIT**
 
 ## [6.4.1] - 2024/06/19
 ### Changed:
-- 9x10x10x9 model architecture
+- 9x10x10x9 model architecture **OVERFIT**
 
 ## [6.4.0] - 2024/06/19
 ### Changed:

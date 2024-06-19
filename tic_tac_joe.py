@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 os.system('cls' if os.name == 'nt' else 'clear')
 print("\033[1K\r\033[0KImports loaded!")
 
-BUILD = '6.4.3'
+BUILD = '6.4.0'
 
 
 
@@ -58,8 +58,7 @@ returns model object
 def __buildModel(alpha):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Input(shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
-        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
-        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
+        tf.keras.layers.Dense(15, activation='relu'),  # Hidden layer
         tf.keras.layers.Dense(9, activation='tanh')  # Output layer (9 possible actions)
     ])
 
@@ -604,8 +603,12 @@ def playUser(model):
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    '''m1 = loadModel('6.0.0', 0.01, 0.9, 15000)
-    m2 = loadModel('6.1.0', 0.01, 0.9, 2500)
-    m3 = loadModel('6.1.1', 0.01, 0.99, 10000)
-    playUser(m3)'''
-    trainModel()
+    '''m1 = loadModel('6.4.0', 0.01, 0.9, 5000)
+    m2 = loadModel('6.4.1', 0.01, 0.9, 5000)
+    m3 = loadModel('6.4.2', 0.01, 0.9, 5000)
+    m4 = loadModel('6.4.3', 0.01, 0.9, 5000)
+    playUser(m1)
+    playUser(m2)
+    playUser(m3)
+    playUser(m4)'''
+    trainModel(loadCurrent(7500))
