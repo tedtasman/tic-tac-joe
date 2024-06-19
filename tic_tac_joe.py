@@ -5,19 +5,30 @@
 This is the main AI training file. It builds the model, and iteratively updates it depending on the game results.
 
 """
-
+print("Initializing...")
+print("Loading import: curses...")
 import curses
+print("Loading import: os...")
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # only show tensorflow errors
+print("Loading import: time...")
 import time
+print("Loading import: numpy...")
 import numpy as np
+print("Loading import: random...")
 import board as bd
+print("Loading import: board...")
 import random as rd
+print("Loading import: ioBoard...")
 import ioBoard as io
+print("Loading import: tensorflow...")
 import tensorflow as tf
+print("Loading import: matplotlib.pyplot...")
 import matplotlib.pyplot as plt
+os.system('cls' if os.name == 'nt' else 'clear')
+print("\033[1K\r\033[0KImports loaded!")
 
-BUILD = '6.3.1'
+BUILD = '6.3.3' # increase epsilon decay
 
 
 
@@ -27,13 +38,13 @@ ALPHA = 0.01     # learning rate
 GAMMA = 0.9     # discount factor
 
 EPSILON = 1.0   # exploration rate
-EPSILON_DECAY = 0.995 # decay rate for epsilon
+EPSILON_DECAY = 0.9997 # decay rate for epsilon
 EPSILON_MIN = 0.1 # minimum epsilon
 
 TIE_REWARD = 0.5  # reward for tie
 BLUNDER_PENALTY = -1 # penalty for blunder (missed win or unforced loss)
 INVALID_PENALTY = 0 # penalty for invalid move
-SCORE_MULTIPLIER = 1 # multiplier for score
+BLOCK_REWARD = 0.9 # reward for blocking opponent's win
 
 
 
@@ -131,7 +142,7 @@ def predictFutureStates(vectorInput, nextMove):
             futureVector[i] = nextMove
 
             # add the future state to the list
-            futureStates.append(futureVector)
+            futureStates.append((futureVector, i))
 
     return futureStates
 
@@ -183,7 +194,7 @@ Gets best moves for exploitation, sets blunder penalty for missed wins and unfor
 
 returns tuple: (target qValues, action)
 '''
-def exploit(vectorInput, currentModel, board, blunderPenalty=0, tieReward=0):
+def exploit(vectorInput, currentModel, board, blunderPenalty=0, tieReward=0, blockReward=0):
 
     # get qValues based on current turn
     qValues = currentModel.predict(vectorInput.reshape(1,-1), verbose=0)[0]
@@ -220,12 +231,13 @@ def exploit(vectorInput, currentModel, board, blunderPenalty=0, tieReward=0):
 
             # get opponent's future states
             doubleFutureStates = predictFutureStates(futureVector, -board.nextMove)
-            for future in doubleFutureStates:
+            for future, opponentAction in doubleFutureStates:
 
                 # if opponent can win
                 if vectorWin(future) == -board.nextMove:
 
                     qValues[action] = blunderPenalty
+                    qValues[opponentAction] = blockReward
                     break
     
     # set all invalid moves to negative infinity
@@ -368,6 +380,7 @@ def trainModel(load=False, override=False, backprop=True):
         epsilonMin = float(input("Set epsilon min: "))
         tieReward = float(input("Set tie reward: "))
         blunderPenalty = float(input("Set blunder penalty: "))
+        blockReward = float(input("Set block reward: "))
 
     # else, use globals
     else:
@@ -378,6 +391,7 @@ def trainModel(load=False, override=False, backprop=True):
         epsilonMin = EPSILON_MIN
         tieReward = TIE_REWARD
         blunderPenalty = BLUNDER_PENALTY
+        blockReward = BLOCK_REWARD
 
     # build model
     if not load:
@@ -387,8 +401,9 @@ def trainModel(load=False, override=False, backprop=True):
     # define training
     iterations = int(input("Set iterations: "))
     saveInterval = int(input("Set save interval: "))
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("\033[92m" + f'Running {iterations} iterations with save interval {saveInterval}... ' + "\033[0m" + '(ctrl + C to exit)')
     print('\n====================================================\n')
-    print('Running {} iterations with save interval {}... (ctrl + C to exit)\n'.format(iterations, saveInterval))
 
     wins = 0
     losses = 0
@@ -434,7 +449,7 @@ def trainModel(load=False, override=False, backprop=True):
                 else:
 
                     # call exploit function, returns targetQValues
-                    targetQValues, action = exploit(vectorInput, model, board, blunderPenalty, tieReward)    
+                    targetQValues, action = exploit(vectorInput, model, board, blunderPenalty, tieReward, blockReward)    
 
                     if backprop:
                         # record state and action for backpropagation
@@ -488,7 +503,7 @@ def trainModel(load=False, override=False, backprop=True):
                 backpropagate(boardStates, model, tieReward, gamma)
 
         # record progress
-        averageMoves = (averageMoves * i + j) / (i + 1)
+        averageMoves = (averageMoves * i + j + 1) / (i + 1)
         winPercentage = (wins + 0.5 * ties) / (i + 1)
         winPercentages.append(winPercentage)
         print(f"\033[1K\r\033[0KAfter {i + offset + 1} iterations: \t W-L-T: {wins}-{losses}-{ties} \t Win/Loss: {(wins + 0.5 * ties) / (i + 1):.3f} \t Average Moves: {averageMoves:.1f}", end='')
@@ -506,7 +521,7 @@ def trainModel(load=False, override=False, backprop=True):
             plt.title('Win Percentage Over Time')
             plt.xlabel('Iteration')
             plt.ylabel('Win Percentage')
-            plt.show()
+            plt.savefig(f'./graphs/{BUILD}_{i + offset + 1}.png')
 
     print('\n\nTraining complete!\n')
 
