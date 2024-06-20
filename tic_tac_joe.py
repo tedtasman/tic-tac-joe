@@ -15,10 +15,12 @@ print("Loading import: time...")
 import time
 print("Loading import: numpy...")
 import numpy as np
-print("Loading import: random...")
-import board as bd
 print("Loading import: board...")
+import board as bd
+print("Loading import: random...")
 import random as rd
+print("Loading import: smartTrain...")
+import smartTrain as st
 print("Loading import: ioBoard...")
 import ioBoard as io
 print("Loading import: tensorflow...")
@@ -28,7 +30,7 @@ import matplotlib.pyplot as plt
 os.system('cls' if os.name == 'nt' else 'clear')
 print("\033[1K\r\033[0KImports loaded!")
 
-BUILD = '6.4.0'
+BUILD = '6.5.7'
 
 
 
@@ -42,7 +44,7 @@ EPSILON_DECAY = 0.995 # decay rate for epsilon
 EPSILON_MIN = 0.1 # minimum epsilon
 
 TIE_REWARD = 0.5  # reward for tie
-BLUNDER_PENALTY = -1 # penalty for blunder (missed win or unforced loss)
+BLUNDER_PENALTY = -1.0 # penalty for blunder (missed win or unforced loss)
 INVALID_PENALTY = 0 # penalty for invalid move
 BLOCK_REWARD = 0.9 # reward for blocking opponent's win
 
@@ -58,7 +60,8 @@ returns model object
 def __buildModel(alpha):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Input(shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
-        tf.keras.layers.Dense(15, activation='relu'),  # Hidden layer
+        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
+        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
         tf.keras.layers.Dense(9, activation='tanh')  # Output layer (9 possible actions)
     ])
 
@@ -533,6 +536,213 @@ def trainModel(load=False, override=False, backprop=True):
 
     return model
 
+'''
+trains the model against common strategies
+'''
+def smartTrain(model, override=False, backprop=True):
+
+    # if override, get custom hyperparameters
+    if override:
+        alpha = float(input("Set alpha: "))
+        gamma = float(input("Set gamma: "))
+        epsilon = float(input("Set epsilon: "))
+        epsilonDecay = float(input("Set epsilon decay: "))
+        epsilonMin = float(input("Set epsilon min: "))
+        tieReward = float(input("Set tie reward: "))
+        blunderPenalty = float(input("Set blunder penalty: "))
+        blockReward = float(input("Set block reward: "))
+
+    # else, use globals
+    else:
+        alpha = ALPHA
+        gamma = GAMMA
+        epsilon = EPSILON
+        epsilonDecay = EPSILON_DECAY
+        epsilonMin = EPSILON_MIN
+        tieReward = TIE_REWARD
+        blunderPenalty = BLUNDER_PENALTY
+        blockReward = BLOCK_REWARD
+        
+    # define training
+    iterations = int(input("Set iterations: "))
+    saveInterval = int(input("Set save interval: "))
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print('\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    print('[' + '\t'*12 + ']')
+    print("]   \033[1m" + f'Running {iterations} iterations with save interval {saveInterval}... ' + "\033[0m" + '(ctrl + C to exit)'+ '\t'*3 + '[')
+    print('[' + '\t'*12 + ']')
+    print(f']   \033[3m\033[1mModel: {BUILD}\033[0m' + '\t'*10 + '[')
+    print(f'[   \033[34mAlpha: {alpha}\033[0m' + '\t'*11 + ']')
+    print(f']   \033[35mGamma: {gamma}\033[0m' + '\t'*11 + '[')
+    print(f'[   \033[32mEpsilon: {epsilon} * {epsilonDecay} -> {epsilonMin}\033[0m' + '\t'*9 + ']')
+    print(f']   \033[96mTie Reward: {tieReward}\033[0m' + '\t'*10 + '[')
+    print(f'[   \033[31mBlunder Penalty: {blunderPenalty}\033[0m' + '\t'*9 + ']')
+    print(f']   \033[93mBlock Reward: {blockReward}\033[0m' + '\t'*10 + '[')
+    print('[' + '\t'*12 + ']')
+    print('-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n')
+
+    winsL = 0
+    lossesL = 0
+    tiesL = 0
+    winPercentageL = 0
+
+    winsC = 0
+    lossesC = 0
+    tiesC = 0
+    winPercentageC = 0
+
+    winsR = 0
+    lossesR = 0
+    tiesR = 0
+    winPercentageR = 0
+    
+    winPercentage = 0
+    winPercentages = []
+
+    # run training
+    for i in range(iterations):
+            
+        # create new board
+        board = bd.Board()
+
+        # get vector representation of empty board
+        vectorInput = np.zeros(9)
+        
+        if backprop:
+            # list to store states and actions for backpropagation
+            boardStates = [(vectorInput, None)]
+
+        # model goes first on even iterations and second on odd iterations
+        if i % 2 == 0:
+            modelTurn = 1
+        else:
+            modelTurn = -1
+
+        # determine opponent strategy
+        strategy = rd.randint(0, 2)
+
+        # store actions
+        actions = []
+
+        # repeat for at most 9 moves
+        for j in range(9):
+
+            # if model's turn
+            if board.nextMove == modelTurn:
+
+                smart = True
+
+                # EXPLORE (pick random square)
+                if rd.random() <= max(epsilonMin, epsilon * (epsilonDecay ** i)):
+
+                    # call explore function, plays move and returns targetQValues
+                    targetQValues, action = explore(vectorInput, model, board, tieReward)
+                    actions.append(action)
+
+                # EXPLOIT (use model probabilities)
+                else:
+
+                    # call exploit function, returns targetQValues
+                    targetQValues, action = exploit(vectorInput, model, board, blunderPenalty, tieReward, blockReward) 
+                    actions.append(action)   
+
+                    if backprop:
+                        # record state and action for backpropagation
+                        boardStates.append((vectorInput, action))            
+            
+            # if not model's turn
+            else:
+                
+                # no fitting to opponent strategy
+                smart = False
+                action = st.trainerSwitch(strategy, board, actions)
+                actions.append(action)
+                board.playMove(*divmod(action, 3))
+
+
+            # only refit for smart moves, not random
+            if smart:
+                # refit the model
+                model.fit(vectorInput.reshape(1,-1), targetQValues.reshape(1,-1), verbose=0)
+
+            # check if game is over
+            winner = board.gameWon()
+
+            # if model wins
+            if winner == modelTurn:
+                if strategy == 0:
+                    winsR += 1
+                elif strategy == 1:
+                    winsL += 1
+                elif strategy == 2:
+                    winsC += 1
+                break
+            
+            # if model loses
+            elif winner == -modelTurn:
+                if strategy == 0:
+                    lossesR += 1
+                elif strategy == 1:
+                    lossesL += 1
+                elif strategy == 2:
+                    lossesC += 1
+                break
+            
+            # if tie
+            elif winner == 2:
+                if strategy == 0:
+                    tiesR += 1
+                elif strategy == 1:
+                    tiesL += 1
+                elif strategy == 2:
+                    tiesC += 1
+                break
+
+            # if game continues; get new vector representation of board
+            else:
+                vectorInput = board.vector
+
+        # backpropagate result
+        if backprop:
+            # if model wins -> reward
+            if winner == modelTurn:
+                backpropagate(boardStates, model, 1, gamma)
+
+            # if model loses -> punish
+            elif winner == -modelTurn:
+                backpropagate(boardStates, model, -1, gamma)
+
+            # if tie -> tie reward
+            else:
+                backpropagate(boardStates, model, tieReward, gamma)
+
+        # record progress
+        winPercentageC = (winsC + 0.5 * tiesC) / (winsC + lossesC + tiesC + 1)
+        winPercentageL = (winsL + 0.5 * tiesL) / (winsL + lossesL + tiesL + 1)
+        winPercentageR = (winsR + 0.5 * tiesR) / (winsR + lossesR + tiesR + 1)
+        winPercentage = (winsC + 0.5 * tiesC + winsL + 0.5 * tiesL + winsR + 0.5 * tiesR) / (i + 1)
+        winPercentages.append(winPercentage)
+        print(f"\033[1K\r\033[0KEpoch {i + 1}: \t Smart Random: {winsR}-{lossesR}-{tiesR} {winPercentageR:.3f} \t L Shape: {winsL}-{lossesL}-{tiesL} {winPercentageL:.3f} \t Corners: {winsC}-{lossesC}-{tiesC} {winPercentageC:.3f} \t Overall: {winPercentage:.3f}", end='')
+
+        if (i + 1) % saveInterval == 0:
+            if not backprop:
+                print('\n')
+                saveModel(model, BUILD + 'st' + 'nb', alpha, gamma, i + 1)
+            print('\n')
+            saveModel(model, BUILD + 'st', alpha, gamma, i + 1)
+            print('\n')
+
+            # plot win percentage over time
+            plt.plot(winPercentages)
+            plt.title('Win Percentage Over Time')
+            plt.xlabel('Iteration')
+            plt.ylabel('Win Percentage')
+            plt.savefig(f'./graphs/{BUILD}st_{i + 1}.png')
+
+    print('\n\nTraining complete!\n')
+
+    return model
+
 
 '''runs AI vs user game in curses wrapper'''
 def __runUserPlay(stdscr, model):
@@ -603,12 +813,6 @@ def playUser(model):
 
 # ============= MAIN ====================================================================================
 if __name__ == "__main__":
-    '''m1 = loadModel('6.4.0', 0.01, 0.9, 5000)
-    m2 = loadModel('6.4.1', 0.01, 0.9, 5000)
-    m3 = loadModel('6.4.2', 0.01, 0.9, 5000)
-    m4 = loadModel('6.4.3', 0.01, 0.9, 5000)
-    playUser(m1)
-    playUser(m2)
-    playUser(m3)
-    playUser(m4)'''
-    trainModel(loadCurrent(7500))
+    m1 = loadModel('6.5.7', 0.01, 0.9, 1)
+    smartTrain(m1, True)
+    
