@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 os.system('cls' if os.name == 'nt' else 'clear')
 print("\033[1K\r\033[0KImports loaded!")
 
-BUILD = '6.5.7'
+BUILD = '6.5.6'
 
 
 
@@ -60,8 +60,7 @@ returns model object
 def __buildModel(alpha):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Input(shape=(9,)),  # Input layer (9 cells in Tic Tac Toe)
-        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
-        tf.keras.layers.Dense(8, activation='relu'),  # Hidden layer
+        tf.keras.layers.Dense(15, activation='relu'),  # Hidden layer
         tf.keras.layers.Dense(9, activation='tanh')  # Output layer (9 possible actions)
     ])
 
