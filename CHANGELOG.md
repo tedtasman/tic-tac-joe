@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 9x8x8x9 model architecture
 - smart training
 
-## [6.5.6] - 2024/06/19
+## [6.5.6] - 2024/06/19 BEST MODEL
 ### Changed:
 - 9x15x9 model architecture
 - smart training
