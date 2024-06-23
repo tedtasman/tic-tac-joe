@@ -1,6 +1,15 @@
+'''
+06/23/2024
+@authors: (Managing Director) Benjamin Rodgers and (CEO) Theodore Tasman
+
+This is the gameWindow file. It creates the GUI for the Tic-Tac-Toe game and allows the user to play against Joe.
+
+'''
+
 import tkinter as tk
+import keras
+import numpy as np
 import board as bd
-import joePlayer as joe
 import random as rd
 
 # Constants
@@ -17,6 +26,8 @@ joeQuotes = ["What do we have here...?", "I am inevitable...", "Hmmm...", "I am 
 joeTies = ["Well played...", "We're evenly matched...", "Well, that was boring...", "That was close!"]
 joeWins = ["I win!", "I'm the best!", "I'm unbeatable!", "I'm the champion!", "I'm the king!"]
 joeLosses = ["You win this time...", "You got lucky...", "I'll get you next time...", "I'll be back!", "I am just an average Joe..."]
+
+model = keras.models.load_model('6.5.6st/a0.01_g0.9_i10000.keras')
 
 # Globals
 board = bd.Board()
@@ -35,10 +46,10 @@ quoteLabel = tk.Label(window, text="", background=BG, foreground=FG, font=("Helv
 quoteLabel.pack(pady=20)
 
 
+# Function to update the quote label
 def updateQuoteLabel():
     if currentPlayer == joeTurn:
         quoteLabel.config(text=f"Joe: {rd.choice(joeQuotes)}")
-
 
 
 # Create a frame for the Tic-Tac-Toe board
@@ -69,13 +80,15 @@ def handleClick(row, col):
             updateQuoteLabel()
             window.after(1500, joeMove)
 
+
+# Function to handle Joe's move
 def joeMove():
 
     global currentPlayer, gameOver
 
     if currentPlayer == joeTurn and not gameOver:
 
-        row, col = joe.getJoeMove(board)
+        row, col = getJoeMove(board)
         if board.grid[row][col] == 0:
 
             board.playMove(row, col)
@@ -83,6 +96,20 @@ def joeMove():
             
             currentPlayer = board.nextMove
             updateStatusLabel()
+
+
+# Function to get Joe's move
+def getJoeMove(board):
+
+    # get best action
+    qValues = model.predict(board.vector.reshape(1,-1), verbose=0)[0]
+    for action in np.argsort(qValues)[::-1]:
+        if board.validMove(*divmod(action, 3)):
+            break
+
+    # return move
+    row, col = divmod(action, 3)
+    return row, col
 
 
 # Function to check for a win
@@ -155,10 +182,12 @@ def switchJoeTurn():
     updateQuoteLabel()
 
 
+# update the switch button text
 def updateSwitchButton():
     switchButton.config(text=f"Make {determinePlayer(O)} Go First", font=("Helvetica", 16))
 
 
+# update the status label
 def updateStatusLabel():
 
     global gameOver
@@ -195,11 +224,6 @@ resetButton.grid(row=0, column=0, padx=5)  # Use grid with padx
 
 switchButton = tk.Button(switchPanel, bg=BG, fg=FG, text=f"Make {determinePlayer(O)} Go First", command=switchJoeTurn, font=("Helvetica", 12))
 switchButton.grid(row=0, column=1, padx=5)  # Use grid with padx
-
-
-
-
-
 
 
 # Run the main loop
