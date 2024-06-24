@@ -46,13 +46,13 @@ The model is built using a neural network architecture that takes the current bo
 - **Output Layer**: Predicts the best next move (position on the board).
 
 ## Training
-The training process involves putting two iterations of the model against each other in a game of tic-tac-toe. Through an evolutionary process, the model will mutate on every iteration, rewarding wins and punishing loses.
+The training process involves playing an AI agent against semi-random play for many epochs. For every move, the agent will either exploit its training; using the neural network to predict the best move, or explore; generate a random move. Utilizing Q-Learning techniques, the model refits after every epoch rewarding wins and punishing loses. 
 
 ## Evaluation
-The model is evaluated on a separate test dataset to measure its accuracy and performance in predicting moves. Evaluation metrics include accuracy and loss.
+The model is evaluated on its performance versus the training program, as well as im human interaction. By graphing the win percentage over time, overfitting can be identified and the ideal number of epochs deduced.
 
 ## Future Work
-- **Model Training:** Explore more methods for model training to achieve a better outcome.
+- **Live Demo**: Host the program live on [ttasman.com](https://ttasman.com/) 
 
 ## Changelog
 All notable changes to this project will be documented in the [CHANGELOG](CHANGELOG.md).
