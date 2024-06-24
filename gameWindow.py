@@ -4,8 +4,11 @@
 
 This is the gameWindow file. It creates the GUI for the Tic-Tac-Toe game and allows the user to play against Joe.
 
+
+BUILD 7.0.2
 '''
 
+from time import sleep
 import tkinter as tk
 import keras
 import numpy as np
@@ -27,7 +30,7 @@ joeTies = ["Well played...", "We're evenly matched...", "Well, that was boring..
 joeWins = ["I win!", "I'm the best!", "I'm unbeatable!", "I'm the champion!", "I'm the king!"]
 joeLosses = ["You win this time...", "You got lucky...", "I'll get you next time...", "I'll be back!", "I am just an average Joe..."]
 
-model = keras.models.load_model('6.5.6st/a0.01_g0.9_i10000.keras')
+model = keras.models.load_model('a0.01_g0.9_i10000.keras')
 
 # Globals
 board = bd.Board()
@@ -103,6 +106,14 @@ def getJoeMove(board):
 
     # get best action
     qValues = model.predict(board.vector.reshape(1,-1), verbose=0)[0]
+
+    # if first move, choose randomly from top 3 actions
+    if np.count_nonzero(board.vector == joeTurn) == 0 and joeTurn == X:
+        qValues = np.argsort(qValues)
+        qValues = qValues[0:3] # get top 3 actions
+        action = np.random.choice(qValues) # choose randomly from top 3
+
+    # otherwise, choose best action
     for action in np.argsort(qValues)[::-1]:
         if board.validMove(*divmod(action, 3)):
             break
@@ -137,6 +148,9 @@ def resetGame():
             buttons[row][col].config(text=" ")
 
     currentPlayer = X
+    if joeTurn == X:
+        sleep(0.5)
+        joeMove()
     updateStatusLabel()
 
 
@@ -184,7 +198,7 @@ def switchJoeTurn():
 
 # update the switch button text
 def updateSwitchButton():
-    switchButton.config(text=f"Make {determinePlayer(O)} Go First", font=("Helvetica", 16))
+    switchButton.config(text=f"Make {determinePlayer(O)} Go First")
 
 
 # update the status label
