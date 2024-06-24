@@ -4,7 +4,7 @@
 This project was created by Theodore Tasman and Benjamin Rodgers
 
 ## Overview
-This project aims to create a generative model for playing tic-tac-toe using a neural network. The model learns to play tic-tac-toe by playing against another iteration of itself.
+This project aims to create a deep-learning model for playing tic-tac-toe using a neural network. The model learns to play tic-tac-toe through Q-Learning.
 
 ## Table of Contents
 - [Project Description](#project-description)
