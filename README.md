@@ -1,4 +1,4 @@
-# Tic-Tac-Joe: A Generative Tic-Tac-Toe Model
+# Tic-Tac-Joe: A Deep-Learning Tic-Tac-Toe Model
 
 ## Authors
 This project was created by Theodore Tasman and Benjamin Rodgers
